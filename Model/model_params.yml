@@ -1,0 +1,3 @@
+args:
+    data_dir: "../Data/crop_model_sample_data_CO2_balance.csv"
+    num_models: 7
