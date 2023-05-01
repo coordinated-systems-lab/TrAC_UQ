@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch 
 import numpy as np
+import sys
+import os 
+from pathlib import Path
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -65,5 +68,20 @@ class GaussianMSELoss(nn.Module):
             return ((target - mu)**2).mean()
 
 def prepare_data(input_data, input_filter):
+
     input_filtered = input_filter.filter(input_data)
+    
     return input_filtered       
+
+def check_or_make_folder(folder_path):
+    """
+    Helper function that (safely) checks if a dir exists; if not, it creates it
+    """
+    
+    folder_path = Path(folder_path)
+
+    try:
+        folder_path.resolve(strict=True)
+    except FileNotFoundError:
+        print("{} dir not found, creating it".format(folder_path))
+        os.mkdir(folder_path)

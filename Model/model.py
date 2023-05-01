@@ -15,7 +15,8 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import SequentialSampler
 import math
 import tabulate
-from utils import GaussianMSELoss, MeanStdevFilter, prepare_data
+import datetime
+from utils import GaussianMSELoss, MeanStdevFilter, prepare_data, check_or_make_folder
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -23,8 +24,8 @@ class TransitionDataset(Dataset):
     ## Dataset wrapper for sampled transitions
     def __init__(self, input_data, output_data):
 
-        self.data_X = torch.Tensor(input_data)   # Filtered Concatenated States & Actions
-        self.data_y = torch.Tensor(output_data)          # Unfiltered NextState - Unfiltered State
+        self.data_X = torch.Tensor(input_data)   
+        self.data_y = torch.Tensor(output_data)          
 
     def __len__(self):
         return len(self.data_X)
@@ -56,28 +57,33 @@ class Ensemble(object):
         self.params = params
         self.input_data = params['input_data']
         self.output_data = params['output_data']
-        #self.models = {i: Model(input_dim=params['ob_dim'] + params['ac_dim'],
-        #                        output_dim=params['ob_dim'] + params['reward_head'],
-        #                        seed=params['seed'] + i,
-        #                        l2_reg_multiplier=params['l2_reg_multiplier'],
-        #                        num=i)
-        #               for i in range(params['num_models'])}
+        self.input_dim = params['no_of_inputs']
+        self.output_dim = params['no_of_outputs']
+        self.models = {i: Model(input_dim=self.input_dim,
+                                output_dim=self.output_dim,
+                                seed=params['seed'] + i,
+                                l2_reg_multiplier=params['l2_reg_multiplier'],
+                                num=i)
+                       for i in range(params['num_models'])}
         #print(f"FIrst loss: {self.models[0].model.state_dict()['logvar.bias']}")
         self.num_models = params['num_models']
         self.train_val_ratio = params['train_val_ratio']
-        #self._model_lr = params['model_lr'] if 'model_lr' in params else 0.001
-        #weights = [weight for model in self.models.values() for weight in model.weights]
+        self._model_lr = params['model_lr'] if 'model_lr' in params else 0.001
+        weights = [weight for model in self.models.values() for weight in model.weights]
         # initializing the max and min logvar to bound the predicted variance  
-        #self.max_logvar = torch.full((self.output_dim,), 0.5, requires_grad=True, device=device)
-        #self.min_logvar = torch.full((self.output_dim,), -10.0, requires_grad=True, device=device)
-        #weights.append({'params': [self.max_logvar]}) #  learning the max and min logvar
-        #weights.append({'params': [self.min_logvar]}) 
-        #self.set_model_logvar_limits()  
+        self.max_logvar = torch.full((self.output_dim,), 0.5, requires_grad=True, device=device)
+        self.min_logvar = torch.full((self.output_dim,), -10.0, requires_grad=True, device=device)
+        weights.append({'params': [self.max_logvar]}) #  learning the max and min logvar
+        weights.append({'params': [self.min_logvar]}) 
+        self.set_model_logvar_limits()  
 
-        #self.optimizer = torch.optim.Adam(weights, lr=self._model_lr)
-        #self._lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.3, verbose=False)
-        self.input_filter = MeanStdevFilter(params['no_of_inputs']) # passing ob_dim
-        self.output_filter = MeanStdevFilter(params['no_of_outputs'])
+        self.optimizer = torch.optim.Adam(weights, lr=self._model_lr)
+        self._lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.3, verbose=False)
+        self.input_filter = MeanStdevFilter(self.input_dim) 
+        self.output_filter = MeanStdevFilter(self.output_dim)
+
+        self._model_id = "Model_seed{}_{}".format(params['seed'],\
+                                                datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'))
 
     def calculate_mean_var(self):
 
@@ -85,11 +91,11 @@ class Ensemble(object):
 
         for i in range(total_points):
             self.input_filter.update(self.input_data[i,:])
+            self.output_filter.update(self.output_data[i])
 
         return 
 
-    def train_model(self, max_epochs: int = 100, n_samples: int = 200000, d4rl_init=False, save_model=False,
-                    min_model_epochs=None):
+    def train_model(self, max_epochs: int = 100, save_model=False, min_model_epochs=None):
         self.current_best_losses = np.zeros(          # params['num_models'] = 7
             self.params['num_models']) + sys.maxsize  # weird hack (YLTSI), there's almost surely a better way...
         self.current_best_weights = [None] * self.params['num_models']
@@ -97,7 +103,8 @@ class Ensemble(object):
         lr_lower = False
         min_model_epochs = 0 if not min_model_epochs else min_model_epochs
 
-        input_filtered = prepare_data(self.params['input_data'])
+        input_filtered = prepare_data(self.input_data, self.input_filter)
+        output_filtered = prepare_data(self.output_data, self.output_filter)
         self.train_size = int((1-self.train_val_ratio)*input_filtered.shape[0])
         self.val_size = input_filtered.shape[0] - self.train_size
 
@@ -107,10 +114,10 @@ class Ensemble(object):
         randperm_train, randperma_val = randperm[:self.train_size], randperm[self.train_size:]
 
         rand_input_filtered_train = input_filtered[randperm_train,:]
-        rand_input_filtered_val = input[randperma_val,:]
+        rand_input_filtered_val = input_filtered[randperma_val,:]
 
-        rand_output_filtered_train = self.params['ouput_data'][randperm_train]
-        rand_output_filtered_val = self.params['output_data'][randperma_val]
+        rand_output_filtered_train = output_filtered[randperm_train]
+        rand_output_filtered_val = output_filtered[randperma_val]
 
         batch_size = 256
 
@@ -137,7 +144,7 @@ class Ensemble(object):
         model_idx = 0
         print('Epoch: %s, Total Loss: N/A' % (0))
         print('Validation Losses:')
-        print('\t'.join('M{}: {}'.format(i, loss) for i, loss in enumerate(iter_best_loss)))
+        #print('\t'.join('M{}: {}'.format(i, loss) for i, loss in enumerate(iter_best_loss)))
         for i in range(max_epochs):  # 1000
             t0 = time.time()
             total_loss = 0
@@ -145,18 +152,20 @@ class Ensemble(object):
             step = 0
             # value to shuffle dataloader rows by so each epoch each model sees different data
             perm = np.random.choice(self.num_models, size=self.num_models, replace=False)
-            for x_batch, diff_batch in transition_loader:  # state_action, delta, reward
+            for x_batch, diff_batch in transition_loader:  # state_action, delta
+
                 x_batch = x_batch[:, perm]
                 diff_batch = diff_batch[:, perm]
                 step += 1
                 for idx in range(self.num_models):
-                    loss += self.models[idx].train_model_forward(x_batch[:, idx], diff_batch[:, idx])  # input: state-action, output: reward, delta
+                    loss += self.models[idx].train_model_forward(x_batch[:, idx], diff_batch[:, idx])  
                 total_loss = loss.item()
                 loss += 0.01 * self.max_logvar.sum() - 0.01 * self.min_logvar.sum()
                 self.optimizer.zero_grad()
-                loss.backward()  # Why backpropagating the loss of all models? 
+                loss.backward()  
                 self.optimizer.step()
                 loss = 0
+  
             t1 = time.time()
             print("Epoch training took {} seconds".format(t1 - t0))
             if (i + 1) % 1 == 0:
@@ -173,8 +182,8 @@ class Ensemble(object):
                 else:
                     epoch_diff = i + 1 - best_epoch
                     plural = 's' if epoch_diff > 1 else ''
-                    print('No improvement detected this epoch: {} Epoch{} since last improvement.'.format(epoch_diff,
-                                                                                                            plural))
+                    print('No improvement detected this epoch: {} Epoch{} since last improvement.'.format(epoch_diff,plural))
+                                                                                          
                 if len(val_improve) > 5:
                     if not any(np.array(val_improve)[1:]):  # If no improvement in the last 5 epochs
                         # assert val_improve[0]
@@ -182,9 +191,9 @@ class Ensemble(object):
                             print('Validation loss stopped improving at %s epochs' % (best_epoch))
                             for model_index in self.models:
                                 self.models[model_index].load_state_dict(self.current_best_weights[model_index])
-                            self._select_elites(validation_loader)
-                            #if save_model:
-                            #    self._save_model()
+                            #self._select_elites(validation_loader)
+                            if save_model:
+                                self._save_model()
                             return
                         elif not lr_lower:
                             self._lr_scheduler.step()
@@ -192,9 +201,26 @@ class Ensemble(object):
                             val_improve = deque(maxlen=6)
                             val_improve.append(True)
                             print("Lowering Adam Learning for fine-tuning")
-                t2 = time.time()
+                t2 = time.time() 
                 print("Validation took {} seconds".format(t2 - t1))
-        self._select_elites(validation_loader)
+        #self._select_elites(validation_loader)
+
+    def _save_model(self):
+        """
+        Method to save model after training is completed
+        """
+        print("Saving model checkpoint...")
+        check_or_make_folder("./checkpoints")
+        check_or_make_folder("./checkpoints/model_saved_weights")
+        save_dir = "./checkpoints/model_saved_weights/{}".format(self._model_id)
+        check_or_make_folder(save_dir)
+        # Create a dictionary with pytorch objects we need to save, starting with models
+        torch_state_dict = {'model_{}_state_dict'.format(i): w for i, w in enumerate(self.current_best_weights)}
+        # Then add logvariance limit terms
+        torch_state_dict['logvar_min'] = self.min_logvar
+        torch_state_dict['logvar_max'] = self.max_logvar
+        # Save Torch files
+        torch.save(torch_state_dict, save_dir + "/torch_model_weights.pt")
 
     def check_validation_losses(self, validation_loader):
         improved_any = False
@@ -215,7 +241,12 @@ class Ensemble(object):
             if get_weights:
                 best_weights.append(deepcopy(model.state_dict()))
         best_losses = np.array(best_losses)
-        return best_losses, best_weights    
+        return best_losses, best_weights   
+
+    def set_model_logvar_limits(self):
+
+        for model in self.models.values():
+            model.model.update_logvar_limits(self.max_logvar, self.min_logvar) 
 
 class Model(nn.Module):
     def __init__(self, input_dim: int,
@@ -236,18 +267,7 @@ class Model(nn.Module):
     def get_next_state_reward(self, state: torch.Tensor, action: torch.Tensor, state_filter, action_filter,
                               keep_logvar=False, deterministic=False, return_mean=False):
         return self.model.get_next_state_reward(state, action, state_filter, action_filter, keep_logvar,
-                                                deterministic, return_mean) # Unnorm
-
-    def predict_state(self, state: np.array, action: np.array, state_filter, action_filter) -> (np.array, float):
-        state, action = torch.Tensor(state).to(device), torch.Tensor(action).to(device)
-        nextstate, reward = self.get_next_state_reward(state, action, state_filter, action_filter) # Unnorm
-        nextstate = nextstate.detach().cpu().numpy()
-        if self.reward_head:
-            reward = reward.detach().cpu().item()
-        return nextstate, reward
-
-    def get_state_action_uncertainty(self, state: torch.Tensor, action: torch.Tensor, state_filter, action_filter):
-        return self.model.get_state_action_uncertainty(state, action, state_filter, action_filter)
+                                                deterministic, return_mean) 
 
     def _train_model_forward(self, x_batch):
         self.model.train()    # TRAINING MODE
@@ -267,17 +287,15 @@ class Model(nn.Module):
         self.model.eval()   # EVALUATION MODE
         preds, targets = [], []
         with torch.no_grad():
-            for x_batch_val, delta_batch_val, r_batch_val in data_loader:
-                x_batch_val, delta_batch_val, r_batch_val = x_batch_val.to(device,
-                                                                           non_blocking=True), delta_batch_val.to(
-                    device, non_blocking=True), r_batch_val.to(device, non_blocking=True)
+            for x_batch_val, delta_batch_val in data_loader:
+                x_batch_val, delta_batch_val= x_batch_val.to(device, non_blocking=True),\
+                                                delta_batch_val.to(device, non_blocking=True)
                 y_pred_val = self.forward(x_batch_val)
                 preds.append(y_pred_val)
                 if return_targets:
-                    y_batch_val = torch.cat([delta_batch_val, r_batch_val.unsqueeze(dim=1)],
-                        dim=1) if self.reward_head else delta_batch_val
-                    targets.append(y_batch_val)
-        
+                    y_batch_val = delta_batch_val
+                    targets.append(y_batch_val.reshape(-1,1))
+
         preds = torch.vstack(preds)
 
         if return_sample:
@@ -295,10 +313,8 @@ class Model(nn.Module):
     def get_validation_loss(self, validation_loader):
         self.model.eval()
         preds, targets = self.get_predictions_from_loader(validation_loader, return_targets=True)
-        if self.is_probabilistic:
-            return self.model.loss(preds, targets, logvar_loss=False).item()
-        else:
-            return self.model.loss(preds, targets).item()
+
+        return self.model.loss(preds, targets, logvar_loss=False).item()
 
 
 class BayesianNeuralNetwork(nn.Module):
@@ -362,6 +378,7 @@ class BayesianNeuralNetwork(nn.Module):
         # Taken from the PETS code to stabilise training (https://github.com/kchua/handful-of-trials)
         logvar = self.max_logvar - F.softplus(self.max_logvar - logvar)
         logvar = self.min_logvar + F.softplus(logvar - self.min_logvar)
+
         return torch.cat((delta, logvar), dim=1)
 
     def get_next_state_reward(self, input: torch.Tensor, input_filter, deterministic=False, return_mean=False):
