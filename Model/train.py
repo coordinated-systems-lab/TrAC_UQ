@@ -4,6 +4,7 @@ import torch
 import argparse
 import yaml
 from model import Ensemble
+from utils import plot_one
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -16,9 +17,22 @@ def train(params: dict):
     params['no_of_inputs'] = params['input_data'].shape[1]
     params['no_of_outputs'] = 1
 
+
     ensemble_ins = Ensemble(params=params)
-    ensemble_ins.calculate_mean_var()
-    ensemble_ins.train_model(params['model_epochs'], save_model=True)
+    # calculate mean and variance of input/output data
+    ensemble_ins.calculate_mean_var() 
+    ensemble_ins.set_loaders() # load the saved data during testing 
+    if params['train_mode']:
+        ensemble_ins.train_model(params['model_epochs'], save_model=True)
+    if params['test_mode']:
+        ground_truth = ensemble_ins.output_filter.invert(ensemble_ins.rand_output_filtered_val)
+        ensemble_ins.load_model(params['load_model_dir'])
+        for model_no, model in ensemble_ins.models.items():
+            mu, logvar =  model.get_next_state_reward(ensemble_ins.rand_input_filtered_val, \
+                                                      deterministic=True, return_mean=False) # normalized validation data
+            mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =  ensemble_ins.calculate_bounds(mu, logvar)
+            plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+
 
 
 def main():
@@ -32,6 +46,9 @@ def main():
     parser.add_argument('--model_lr', type=float, default=0.001, help='lr for Transition Model')
     parser.add_argument('--l2_reg_multiplier', type=float, default=1.)
     parser.add_argument('--min_model_epochs', type=int, default=None)
+    parser.add_argument('--train_mode', type=bool, default=False)
+    parser.add_argument('--test_mode', type=bool, default=False)
+    parser.add_argument('--load_model_dir', type=str, default=None)
 
     args = parser.parse_args()
     params = vars(args)

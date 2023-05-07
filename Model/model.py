@@ -94,14 +94,8 @@ class Ensemble(object):
             self.output_filter.update(self.output_data[i])
 
         return 
-
-    def train_model(self, max_epochs: int = 100, save_model=False, min_model_epochs=None):
-        self.current_best_losses = np.zeros(          # params['num_models'] = 7
-            self.params['num_models']) + sys.maxsize  # weird hack (YLTSI), there's almost surely a better way...
-        self.current_best_weights = [None] * self.params['num_models']
-        val_improve = deque(maxlen=6)
-        lr_lower = False
-        min_model_epochs = 0 if not min_model_epochs else min_model_epochs
+    
+    def set_loaders(self):
 
         input_filtered = prepare_data(self.input_data, self.input_filter)
         output_filtered = prepare_data(self.output_data, self.output_filter)
@@ -114,31 +108,39 @@ class Ensemble(object):
         randperm_train, randperma_val = randperm[:self.train_size], randperm[self.train_size:]
 
         rand_input_filtered_train = input_filtered[randperm_train,:]
-        rand_input_filtered_val = input_filtered[randperma_val,:]
+        self.rand_input_filtered_val = input_filtered[randperma_val,:]
 
         rand_output_filtered_train = output_filtered[randperm_train]
-        rand_output_filtered_val = output_filtered[randperma_val]
+        self.rand_output_filtered_val = output_filtered[randperma_val]
 
         batch_size = 256
 
-        transition_loader = DataLoader(
+        self.transition_loader = DataLoader(
             EnsembleTransitionDataset(rand_input_filtered_train, rand_output_filtered_train, n_models=self.num_models),
             shuffle=True,
             batch_size=batch_size,
             pin_memory=True
         )
         
-        validate_dataset = TransitionDataset(rand_input_filtered_val, rand_output_filtered_val)
+        validate_dataset = TransitionDataset(self.rand_input_filtered_val, self.rand_output_filtered_val)
         sampler = SequentialSampler(validate_dataset)
-        validation_loader = DataLoader(
+        self.validation_loader = DataLoader(
             validate_dataset,
             sampler=sampler,
             batch_size=batch_size,
             pin_memory=True
         )
 
+    def train_model(self, max_epochs: int = 100, save_model=False, min_model_epochs=None):
+        self.current_best_losses = np.zeros(          # params['num_models'] = 7
+            self.params['num_models']) + sys.maxsize  # weird hack (YLTSI), there's almost surely a better way...
+        self.current_best_weights = [None] * self.params['num_models']
+        val_improve = deque(maxlen=6)
+        lr_lower = False
+        min_model_epochs = 0 if not min_model_epochs else min_model_epochs
+
         ### check validation before first training epoch
-        improved_any, iter_best_loss = self.check_validation_losses(validation_loader)
+        improved_any, iter_best_loss = self.check_validation_losses(self.validation_loader)
         val_improve.append(improved_any)
         best_epoch = 0
         model_idx = 0
@@ -152,7 +154,7 @@ class Ensemble(object):
             step = 0
             # value to shuffle dataloader rows by so each epoch each model sees different data
             perm = np.random.choice(self.num_models, size=self.num_models, replace=False)
-            for x_batch, diff_batch in transition_loader:  # state_action, delta
+            for x_batch, diff_batch in self.transition_loader:  # state_action, delta
 
                 x_batch = x_batch[:, perm]
                 diff_batch = diff_batch[:, perm]
@@ -169,7 +171,7 @@ class Ensemble(object):
             t1 = time.time()
             print("Epoch training took {} seconds".format(t1 - t0))
             if (i + 1) % 1 == 0:
-                improved_any, iter_best_loss = self.check_validation_losses(validation_loader)
+                improved_any, iter_best_loss = self.check_validation_losses(self.validation_loader)
                 print('Epoch: {}, Total Loss: {}'.format(int(i + 1), float(total_loss)))
                 print('Validation Losses:')
                 print('\t'.join('M{}: {}'.format(i, loss) for i, loss in enumerate(iter_best_loss)))
@@ -248,6 +250,36 @@ class Ensemble(object):
         for model in self.models.values():
             model.model.update_logvar_limits(self.max_logvar, self.min_logvar) 
 
+    def load_model(self, model_dir):
+        """loads the trained models"""
+        torch_state_dict = torch.load(model_dir + '/torch_model_weights.pt', map_location=device)
+        for i in range(self.num_models):
+            self.models[i].load_state_dict(torch_state_dict['model_{}_state_dict'.format(i)])
+        self.min_logvar = torch_state_dict['logvar_min']
+        self.max_logvar = torch_state_dict['logvar_max']
+
+    def calculate_bounds(self, mu:torch.Tensor, logvar:torch.Tensor):
+        """
+        mu: unnormalized predictions in tensor
+        logvar: predicted logvar in tensor
+        """
+        if len(mu.shape) == 1:
+            mu = mu.reshape(1,-1)
+            logvar = logvar.reshape(1,-1)
+
+        upper_mu =  mu + torch.mul(logvar.exp().sqrt(), 1.96)
+        lower_mu =  mu - torch.mul(logvar.exp().sqrt(), 1.96)
+
+        mu = self.output_filter.invert_torch(mu)
+        upper_mu = self.output_filter.invert_torch(upper_mu)
+        lower_mu = self.output_filter.invert_torch(lower_mu)   
+
+        mu = mu.detach().cpu().numpy()
+        upper_mu = upper_mu.detach().cpu().numpy()
+        lower_mu = lower_mu.detach().cpu().numpy()
+
+        return mu, upper_mu, lower_mu 
+
 class Model(nn.Module):
     def __init__(self, input_dim: int,
                  output_dim: int,
@@ -264,10 +296,8 @@ class Model(nn.Module):
     def forward(self, x: torch.Tensor):
         return self.model(x)
 
-    def get_next_state_reward(self, state: torch.Tensor, action: torch.Tensor, state_filter, action_filter,
-                              keep_logvar=False, deterministic=False, return_mean=False):
-        return self.model.get_next_state_reward(state, action, state_filter, action_filter, keep_logvar,
-                                                deterministic, return_mean) 
+    def get_next_state_reward(self, input: torch.Tensor, deterministic=False, return_mean=False):
+        return self.model.get_next_state_reward(input, deterministic, return_mean) 
 
     def _train_model_forward(self, x_batch):
         self.model.train()    # TRAINING MODE
@@ -381,9 +411,9 @@ class BayesianNeuralNetwork(nn.Module):
 
         return torch.cat((delta, logvar), dim=1)
 
-    def get_next_state_reward(self, input: torch.Tensor, input_filter, deterministic=False, return_mean=False):
-        input_f = self.filter_inputs(input, input_filter)
-        mu, logvar = self.forward(input).chunk(2, dim=1)
+    def get_next_state_reward(self, input: torch.Tensor, deterministic=False, return_mean=False):
+        input_torch = torch.FloatTensor(input).to(device)
+        mu, logvar = self.forward(input_torch).chunk(2, dim=1)
         mu_orig = mu
 
         if not deterministic:
