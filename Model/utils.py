@@ -148,8 +148,8 @@ def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_
     plt.rc('figure', titlesize=12)  # fontsize of the figure title
 
     ax.fill_between(no_of_inputs, lower_mu.reshape(-1,), upper_mu.reshape(-1,), alpha=0.3)
+    r1, = ax.plot(no_of_inputs, ground_truth.reshape(-1,), "r*")
     k1, = ax.plot(no_of_inputs, mu.reshape(-1,), "k-")
-    r1, = ax.plot(no_of_inputs, ground_truth.reshape(-1,), "r-")
 
     ax.set_ylabel('Predictions')
     ax.set_xlabel('Inputs')
