@@ -73,7 +73,39 @@ def prepare_data(input_data, input_filter):
 
     input_filtered = input_filter.filter(input_data)
     
-    return input_filtered       
+    return input_filtered
+
+def find_min_distances(val_data:np.ndarray, train_data:np.ndarray):
+    """
+    Find the nearest training example to each data point from validation dataset,
+    calculate distance and return the indices of validation examples sorted based on 
+    their distances from the nearest training examples 
+    """ 
+    print("Calculating distances...")
+    min_distances = []
+    for val_dat in val_data:
+        
+        distances = np.linalg.norm(train_data - val_dat, axis=1)
+        min_distance = np.min(distances)
+        min_distances.append(min_distance)
+
+    return np.argsort(min_distances)
+
+def min_max_norm(array: np.ndarray):
+    """
+    To split the data intentionally based on this instead of random 
+    mixing to test the UQ abilities of deep ensembles. 
+    """
+    if array.shape[1] == 1:
+        array = array.reshape(1,-1)    # reshape to find the min and max 
+    min_value = np.min(array, axis=1)
+    max_value = np.max(array, axis=1)
+    norm_array = np.divide(np.subtract(array.T, min_value), np.subtract(max_value, min_value))
+
+    if array.shape[0] == 1:
+        return norm_array
+    else:
+        return norm_array.T       
 
 def check_or_make_folder(folder_path):
     """
@@ -148,13 +180,13 @@ def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_
     plt.rc('figure', titlesize=12)  # fontsize of the figure title
 
     ax.fill_between(no_of_inputs, lower_mu.reshape(-1,), upper_mu.reshape(-1,), alpha=0.3)
-    r1, = ax.plot(no_of_inputs, ground_truth.reshape(-1,), "r*")
+    r1, = ax.plot(no_of_inputs, ground_truth.reshape(-1,), "r-")
     k1, = ax.plot(no_of_inputs, mu.reshape(-1,), "k-")
 
     ax.set_ylabel('Predictions')
     ax.set_xlabel('Inputs')
     ax.grid(True)
-    ax.legend(('Confidence Interval', 'Predictions', 'Ground Truth'),\
+    ax.legend(('Confidence Interval', 'Ground Truth', 'Predictions'),\
                   bbox_to_anchor=(0,1.01,0.9,0.2), mode='expand', loc='lower center', ncol=4,\
                       borderaxespad=0, shadow=False)
 

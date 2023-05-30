@@ -16,7 +16,8 @@ from torch.utils.data.sampler import SequentialSampler
 import math
 import tabulate
 import datetime
-from utils import GaussianMSELoss, MeanStdevFilter, prepare_data, check_or_make_folder
+from utils import GaussianMSELoss, MeanStdevFilter, prepare_data, check_or_make_folder, min_max_norm
+import pickle
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -82,7 +83,7 @@ class Ensemble(object):
         self.input_filter = MeanStdevFilter(self.input_dim) 
         self.output_filter = MeanStdevFilter(self.output_dim)
 
-        self._model_id = "Model_seed{}_{}".format(params['seed'],\
+        self._model_id = "Model_seed{}_{}_{}".format(params['seed'], params['split_type'],\
                                                 datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'))
 
     def calculate_mean_var(self):
@@ -95,7 +96,7 @@ class Ensemble(object):
 
         return 
     
-    def set_loaders(self):
+    def set_loaders(self):            
 
         input_filtered = prepare_data(self.input_data, self.input_filter)
         output_filtered = prepare_data(self.output_data, self.output_filter)
@@ -104,19 +105,35 @@ class Ensemble(object):
 
         ########## MIX VALIDATION AND TRAINING ##########
 
-        randperm = np.random.permutation(self.train_size + self.val_size)
-        randperm_train, randperma_val = randperm[:self.train_size], randperm[self.train_size:]
+        if self.params['split_type'] == 'random':        
+            randperm = np.random.permutation(self.train_size + self.val_size)
+            randperm_train, randperm_val = randperm[:self.train_size], randperm[self.train_size:]
+            train_idx = randperm_train
+            val_idx = randperm_val   
+        elif self.params['split_type'] == 'min_max_norm':
+            min_max_input_data = min_max_norm(self.input_data)
+            norm_min_max_input_data = np.linalg.norm(min_max_input_data, axis=1) # [1, 1.41]
+            idx_norm_min_max_input_data = np.argsort(norm_min_max_input_data)
+            idx_min_max_train, idx_min_max_test = idx_norm_min_max_input_data[:self.train_size], idx_norm_min_max_input_data[self.train_size:]
+            train_idx = idx_min_max_train
+            val_idx = idx_min_max_test 
 
-        rand_input_filtered_train = input_filtered[randperm_train,:]
-        self.rand_input_filtered_val = input_filtered[randperma_val,:]
+        self.rand_input_train = self.input_data[train_idx,:]
+        self.rand_input_val = self.input_data[val_idx,:]        
 
-        rand_output_filtered_train = output_filtered[randperm_train]
-        self.rand_output_filtered_val = output_filtered[randperma_val]
+        self.rand_output_train = self.output_data[train_idx]
+        self.rand_output_val = self.output_data[val_idx]
+        
+        self.rand_input_filtered_train = input_filtered[train_idx,:]
+        self.rand_input_filtered_val = input_filtered[val_idx,:]
+
+        self.rand_output_filtered_train = output_filtered[train_idx]
+        self.rand_output_filtered_val = output_filtered[val_idx]
 
         batch_size = 256
 
         self.transition_loader = DataLoader(
-            EnsembleTransitionDataset(rand_input_filtered_train, rand_output_filtered_train, n_models=self.num_models),
+            EnsembleTransitionDataset(self.rand_input_filtered_train, self.rand_output_filtered_train, n_models=self.num_models),
             shuffle=True,
             batch_size=batch_size,
             pin_memory=True
@@ -223,6 +240,18 @@ class Ensemble(object):
         torch_state_dict['logvar_max'] = self.max_logvar
         # Save Torch files
         torch.save(torch_state_dict, save_dir + "/torch_model_weights.pt")
+        print("Saving train and val data...")        
+        data_state_dict = {'train_input_filter_data': self.rand_input_filtered_train, 
+                           'val_input_filter_data': self.rand_input_filtered_val,
+                           'train_out_filter_data': self.rand_output_filtered_train,
+                           'val_out_filter_data': self.rand_output_filtered_val,
+                           'train_input_data': self.rand_input_train,
+                           'val_input_data': self.rand_input_val,
+                           'train_out_data': self.rand_output_train,
+                           'val_out_data': self.rand_output_val,
+                           'input_filter': self.input_filter,
+                           'output_filter': self.output_filter}   
+        pickle.dump(data_state_dict, open(save_dir + '/model_data.pkl', 'wb'))
 
     def check_validation_losses(self, validation_loader):
         improved_any = False
@@ -257,6 +286,36 @@ class Ensemble(object):
             self.models[i].load_state_dict(torch_state_dict['model_{}_state_dict'.format(i)])
         self.min_logvar = torch_state_dict['logvar_min']
         self.max_logvar = torch_state_dict['logvar_max']
+        # loading train and val data     
+        data_state_dict = pickle.load(open(model_dir + '/model_data.pkl', 'rb'))
+        self.rand_input_filtered_train = data_state_dict['train_input_filter_data']
+        self.rand_input_filtered_val = data_state_dict['val_input_filter_data']
+        self.rand_output_filtered_train = data_state_dict['train_out_filter_data']
+        self.rand_output_filtered_val = data_state_dict['val_out_filter_data'] 
+        self.rand_input_train = data_state_dict['train_input_data']
+        self.rand_input_val = data_state_dict['val_input_data']
+        self.rand_output_train = data_state_dict['train_out_data']
+        self.rand_output_val = data_state_dict['val_out_data']
+        self.input_filter = data_state_dict['input_filter']
+        self.output_filter = data_state_dict['output_filter']
+        # reinitialize the train and val loaders 
+        batch_size = 256
+
+        self.transition_loader = DataLoader(
+            EnsembleTransitionDataset(self.rand_input_filtered_train, self.rand_output_filtered_train, n_models=self.num_models),
+            shuffle=True,
+            batch_size=batch_size,
+            pin_memory=True
+        )
+        
+        validate_dataset = TransitionDataset(self.rand_input_filtered_val, self.rand_output_filtered_val)
+        sampler = SequentialSampler(validate_dataset)
+        self.validation_loader = DataLoader(
+            validate_dataset,
+            sampler=sampler,
+            batch_size=batch_size,
+            pin_memory=True
+        )        
 
     def calculate_bounds(self, mu:torch.Tensor, logvar:torch.Tensor):
         """

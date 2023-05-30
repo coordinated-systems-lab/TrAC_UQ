@@ -4,11 +4,16 @@ import torch
 import argparse
 import yaml
 from model import Ensemble
-from utils import plot_one
+from utils import plot_one, find_min_distances
+import random
+import sys
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train(params: dict):
+
+    #np.random.seed(params['seed'])
+    #random.seed(params['seed'])
 
     orig_data = genfromtxt(params['data_dir'], delimiter=',')
     params['input_data'] = np.array(orig_data[1:,1:5])
@@ -19,21 +24,34 @@ def train(params: dict):
 
 
     ensemble_ins = Ensemble(params=params)
-    # calculate mean and variance of input/output data
-    ensemble_ins.calculate_mean_var() 
-    ensemble_ins.set_loaders() # load the saved data during testing 
+             
     if params['train_mode']:
+        ensemble_ins.calculate_mean_var()
+        ensemble_ins.set_loaders()
         ensemble_ins.train_model(params['model_epochs'], save_model=True)
     if params['test_mode']:
-        ground_truth = ensemble_ins.output_filter.invert(ensemble_ins.rand_output_filtered_val)
-        ensemble_ins.load_model(params['load_model_dir'])
-        for model_no, model in ensemble_ins.models.items():
-            mu, logvar =  model.get_next_state_reward(ensemble_ins.rand_input_filtered_val, \
-                                                      deterministic=True, return_mean=False) # normalized validation data
-            mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =  ensemble_ins.calculate_bounds(mu, logvar)
-            plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
-
-
+        if not params['saved_pred_csv']:
+            ensemble_ins.load_model(params['load_model_dir'])
+            sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
+            sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val[sorted_val_indices]
+            sorted_rand_output_filtered_val = ensemble_ins.rand_output_filtered_val[sorted_val_indices]
+            ground_truth = ensemble_ins.output_filter.invert(sorted_rand_output_filtered_val)
+            for model_no, model in ensemble_ins.models.items():
+                mu, logvar =  model.get_next_state_reward(sorted_rand_input_filtered_val, \
+                                                        deterministic=True, return_mean=False) # normalized validation data
+                mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =  ensemble_ins.calculate_bounds(mu, logvar)
+                if params['save_pred']:
+                    save_pred = np.stack((ground_truth.reshape(-1,), mu_unnorm.reshape(-1,),
+                                        upper_mu_unnorm.reshape(-1,), lower_mu_unnorm.reshape(-1,)), axis=1)
+                    np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
+                plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+        else:
+            for model_no, model in ensemble_ins.models.items():         
+                saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
+                ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
+                    saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
+                plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+    return             
 
 def main():
     parser = argparse.ArgumentParser()
@@ -49,6 +67,9 @@ def main():
     parser.add_argument('--train_mode', type=bool, default=False)
     parser.add_argument('--test_mode', type=bool, default=False)
     parser.add_argument('--load_model_dir', type=str, default=None)
+    parser.add_argument('--split_type', type=str, default='random') # random | min_max
+    parser.add_argument('--save_pred', type=bool, default=False)
+    parser.add_argument('--saved_pred_csv', type=str, default=None)
 
     args = parser.parse_args()
     params = vars(args)
