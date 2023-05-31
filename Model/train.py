@@ -46,8 +46,8 @@ def train(params: dict):
                     np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
                 plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
         else:
-            start_idx = 0
-            end_idx = 100
+            start_idx = 800
+            end_idx = start_idx + 100
             for model_no, model in ensemble_ins.models.items():         
                 saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
                 ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
