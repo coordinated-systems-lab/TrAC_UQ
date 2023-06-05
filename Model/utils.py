@@ -157,7 +157,50 @@ def plot_many(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground
         main_dir = main_dir + save_dir
 
     plt.savefig(main_dir+file_name)
-    plt.show()        
+    plt.show()
+
+def plot_mse_var(mses: np.ndarray, aggr_var_dict: dict, file_name:str, save_dir:str=None):
+
+    y_labels = ['Max Aleotoric', 'Ensemble Var', 'Ensemble Std', 'LL Var']
+    fig = plt.figure() 
+
+    gs = fig.add_gridspec(2, 2, hspace=0.15)
+    ax = gs.subplots(sharex=True)
+
+    fig.set_figheight(25)
+    fig.set_figwidth(22)
+
+    plt.rc('font', size=22)          # controls default text sizes
+    plt.rc('axes', titlesize=22)     # fontsize of the axes title
+    plt.rc('axes', labelsize=25)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=22)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=22)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=22)    # legend fontsize
+    plt.rc('figure', titlesize=12)  # fontsize of the figure title
+
+    i, j = 0, 0
+    for key in aggr_var_dict.keys():
+        ax[i, j].plot(mses, aggr_var_dict[key], "k*")
+        ax[i, j].grid(True)
+        ax[i, j].set_ylabel(y_labels[i])
+        if j == 1:
+            j = 0
+            i += 1
+            continue
+        j += 1    
+
+    ax[1,0].set_xlabel('MSE')
+    ax[1,1].set_xlabel('MSE')
+    #ax.legend(('Confidence Interval', 'Predictions', 'Ground Truth'),\
+    #              bbox_to_anchor=(0,1.01,0.9,0.2), mode='expand', loc='lower center', ncol=4,\
+    #                  borderaxespad=0, shadow=False)
+    
+    main_dir = "../Results/"
+    if save_dir: 
+        main_dir = main_dir + save_dir
+
+    plt.savefig(main_dir+file_name)
+    plt.show()
 
 def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_truth: np.ndarray, file_name:str, save_dir:str=None):
 

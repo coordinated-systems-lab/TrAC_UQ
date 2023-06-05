@@ -4,7 +4,8 @@ import torch
 import argparse
 import yaml
 from model import Ensemble
-from utils import plot_one, find_min_distances
+from utils import plot_one, find_min_distances, plot_mse_var
+from sklearn.metrics import mean_squared_error
 import random
 import sys
 
@@ -36,18 +37,31 @@ def train(params: dict):
             sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val[sorted_val_indices]
             sorted_rand_output_filtered_val = ensemble_ins.rand_output_filtered_val[sorted_val_indices]
             ground_truth = ensemble_ins.output_filter.invert(sorted_rand_output_filtered_val)
+            # for aggregated mean and variance 
+            mu_unnorm_all = torch.zeros(params['num_models'], sorted_rand_input_filtered_val.shape[0], device=device)
+            logvar_all = torch.zeros(params['num_models'], sorted_rand_input_filtered_val.shape[0], device=device)
+            actual_mu_all = torch.zeros(params['num_models'], sorted_rand_input_filtered_val.shape[0], device=device)
+
             for model_no, model in ensemble_ins.models.items():
                 mu, logvar =  model.get_next_state_reward(sorted_rand_input_filtered_val, \
-                                                        deterministic=True, return_mean=False) # normalized validation data
-                mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =  ensemble_ins.calculate_bounds(mu, logvar)
+                                                        deterministic=True, return_mean=True) # normalized validation data
+                mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =  ensemble_ins.calculate_bounds(mu[0], logvar)
+                mu_unnorm_all[model_no,:] = torch.FloatTensor(mu_unnorm.reshape(-1,)).to(device)
+                logvar_all[model_no,:] = logvar.reshape(-1,)
+                actual_mu_all[model_no,:] = ensemble_ins.output_filter.invert_torch(mu[1].reshape(1,-1))
                 if params['save_pred']:
                     save_pred = np.stack((ground_truth.reshape(-1,), mu_unnorm.reshape(-1,),
                                         upper_mu_unnorm.reshape(-1,), lower_mu_unnorm.reshape(-1,)), axis=1)
-                    np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
+                    #np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
                 plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+            mu_rand = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
+            mses = np.square(np.subtract(ground_truth, mu_rand.detach().cpu().numpy()))
+            aggr_var_dict = ensemble_ins.aggr_var(['max_aleotoric', 'ensemble_var', 'ensemble_std', 'll_var'], mu_rand,\
+                                                  mu_unnorm_all, logvar_all, actual_mu_all)
+            plot_mse_var(mses, aggr_var_dict, file_name="aggr_var.png")
         else:
             start_idx = 0
-            end_idx = 100
+            end_idx = start_idx + 100
             for model_no, model in ensemble_ins.models.items():         
                 saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
                 ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
@@ -73,6 +87,7 @@ def main():
     parser.add_argument('--split_type', type=str, default='random') # random | min_max
     parser.add_argument('--save_pred', type=bool, default=False)
     parser.add_argument('--saved_pred_csv', type=str, default=None)
+    parser.add_argument('--swag_sample_select', type=str, default='random') 
 
     args = parser.parse_args()
     params = vars(args)

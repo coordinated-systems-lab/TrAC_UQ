@@ -339,6 +339,57 @@ class Ensemble(object):
 
         return mu, upper_mu, lower_mu 
 
+    def aggr_var(self, aggr_var: list, mu_rand, mu_unnorm_all, logvar_all, actual_mu=None):
+        """Different variance aggregation methods"""
+         # mu_rand: (examples, out_dim) out_dim = 1 
+         # mu_unnorm_all: (no_of_models, examples, out_dim) # sampled pred. from Gaussian 
+         # logvar_all: (no_of_models, examples, out_dim)
+         # nextstates_mu: (no_of_models, examples, out_dim) # mean pred.
+        mu_unnorm_all = mu_unnorm_all.reshape(self.params['num_models'],-1,1)
+        logvar_all = logvar_all.reshape(self.params['num_models'],-1,1)
+        actual_mu = actual_mu.reshape(self.params['num_models'],-1,1)
+
+        aggr_var_dict = {} 
+        if 'max_aleotoric' in aggr_var:
+            std_all = logvar_all.exp().sqrt()
+            var_aggr = std_all.norm(2,2).amax(0) # norm across features and max across no. of models ouput one penalty per state 
+            aggr_var_dict['max_aleotoric'] = var_aggr.detach().cpu().numpy()
+        if 'ensemble_var' in aggr_var:
+            nextstates_var = logvar_all.exp()
+            mean_of_vars = torch.mean(nextstates_var, dim=0)
+            var_of_means = torch.var(mu_unnorm_all, dim=0)
+            vr = mean_of_vars + var_of_means
+            var_aggr = torch.mean(vr, dim=1)
+            aggr_var_dict['ensemble_var'] = var_aggr.detach().cpu().numpy()
+        if 'ensemble_std' in aggr_var:
+            nextstates_var = logvar_all.exp()
+            mean_of_vars = torch.mean(nextstates_var, dim=0)
+            var_of_means = torch.var(mu_unnorm_all, dim=0)
+            std = (mean_of_vars + var_of_means).sqrt()
+            var_aggr = torch.mean(std, dim=1)
+            aggr_var_dict['ensemble_std'] = var_aggr.detach().cpu().numpy()
+        if 'll_var' in aggr_var:
+            mus, stds = actual_mu, logvar_all.exp().sqrt()
+            dist = torch.distributions.Normal(mus, stds)
+            ll = dist.log_prob(mu_rand).sum(2)
+            # the aggregation is then just the variance of the log likelihoods, averaged across each next state prediction
+            var_aggr = ll.var(0)
+            aggr_var_dict['ll_var'] = var_aggr.detach().cpu().numpy()    
+
+        return aggr_var_dict
+
+    def random_selection(self, mu_all: torch.Tensor, noOfStates: int):
+
+        num_models = self.params['num_models']
+
+        if self.params['swag_sample_select'] == 'random':
+            allocation = torch.randint(0, num_models, (noOfStates,), device=device)  # A different elite for every state (transition)
+        allocation_states = allocation.repeat(self.output_dim, 1).T.view(1, -1, self.output_dim) # repeat that for all features now (1,examples,state_dim)
+        mu = mu_all.gather(0, allocation_states).squeeze(0)
+
+        return mu       
+
+
 class Model(nn.Module):
     def __init__(self, input_dim: int,
                  output_dim: int,
@@ -356,7 +407,7 @@ class Model(nn.Module):
         return self.model(x)
 
     def get_next_state_reward(self, input: torch.Tensor, deterministic=False, return_mean=False):
-        return self.model.get_next_state_reward(input, deterministic, return_mean) 
+        return self.model.get_next_state_reward(input, deterministic, return_mean)
 
     def _train_model_forward(self, x_batch):
         self.model.train()    # TRAINING MODE
@@ -480,7 +531,7 @@ class BayesianNeuralNetwork(nn.Module):
             mu = dist.sample()
  
         if return_mean:
-            mu = torch.cat((mu, mu_orig), dim=1)
+            return (mu, mu_orig), logvar
 
         return mu, logvar
 
