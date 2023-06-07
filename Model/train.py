@@ -61,14 +61,14 @@ def train(params: dict):
             for i in range(2):
                 plot_mse_var(mses, aggr_var_dict, file_name=f"aggr_var{i}.png")
         else:
-            start_idx = 35500
+            start_idx = 22000
             end_idx = start_idx + 100
             for model_no, model in ensemble_ins.models.items():         
                 saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
                 ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
                     saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
                 plot_one(mu_unnorm[start_idx:end_idx], upper_mu_unnorm[start_idx:end_idx], lower_mu_unnorm[start_idx:end_idx],\
-                          ground_truth[start_idx:end_idx], file_name=f"model_{model_no}_pred.png")
+                          ground_truth[start_idx:end_idx], file_name=f"model_{model_no}_pred_{start_idx}.png")
     return             
 
 def main():

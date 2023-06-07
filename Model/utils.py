@@ -226,7 +226,7 @@ def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_
     r1, = ax.plot(no_of_inputs, ground_truth.reshape(-1,), "r-")
     k1, = ax.plot(no_of_inputs, mu.reshape(-1,), "k-")
 
-    ax.set_ylabel('Predictions')
+    ax.set_ylabel('Photosynthetic Rate')
     ax.set_xlabel('Inputs')
     ax.grid(True)
     ax.legend(('Ground Truth', 'Predictions', 'Confidence Interval'),\
