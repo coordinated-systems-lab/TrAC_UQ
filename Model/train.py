@@ -58,9 +58,10 @@ def train(params: dict):
             mses = np.square(np.subtract(ground_truth, mu_rand.detach().cpu().numpy()))
             aggr_var_dict = ensemble_ins.aggr_var(['max_aleotoric', 'ensemble_var', 'ensemble_std', 'll_var'], mu_rand,\
                                                   mu_unnorm_all, logvar_all, actual_mu_all)
-            plot_mse_var(mses, aggr_var_dict, file_name="aggr_var.png")
+            for i in range(2):
+                plot_mse_var(mses, aggr_var_dict, file_name=f"aggr_var{i}.png")
         else:
-            start_idx = 800
+            start_idx = 35500
             end_idx = start_idx + 100
             for model_no, model in ensemble_ins.models.items():         
                 saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')

@@ -161,7 +161,7 @@ def plot_many(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground
 
 def plot_mse_var(mses: np.ndarray, aggr_var_dict: dict, file_name:str, save_dir:str=None):
 
-    y_labels = ['Max Aleotoric', 'Ensemble Var', 'Ensemble Std', 'LL Var']
+    y_labels = [['Max Aleotoric', 'Ensemble Var'], ['Ensemble Std', 'LL Var']]
     fig = plt.figure() 
 
     gs = fig.add_gridspec(2, 2, hspace=0.15)
@@ -170,11 +170,11 @@ def plot_mse_var(mses: np.ndarray, aggr_var_dict: dict, file_name:str, save_dir:
     fig.set_figheight(25)
     fig.set_figwidth(22)
 
-    plt.rc('font', size=22)          # controls default text sizes
-    plt.rc('axes', titlesize=22)     # fontsize of the axes title
-    plt.rc('axes', labelsize=25)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=22)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=22)    # fontsize of the tick labels
+    plt.rc('font', size=29)          # controls default text sizes
+    plt.rc('axes', titlesize=29)     # fontsize of the axes title
+    plt.rc('axes', labelsize=26)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=29)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=29)    # fontsize of the tick labels
     plt.rc('legend', fontsize=22)    # legend fontsize
     plt.rc('figure', titlesize=12)  # fontsize of the figure title
 
@@ -182,7 +182,7 @@ def plot_mse_var(mses: np.ndarray, aggr_var_dict: dict, file_name:str, save_dir:
     for key in aggr_var_dict.keys():
         ax[i, j].plot(mses, aggr_var_dict[key], "k*")
         ax[i, j].grid(True)
-        ax[i, j].set_ylabel(y_labels[i])
+        ax[i, j].set_ylabel(y_labels[i][j])
         if j == 1:
             j = 0
             i += 1
@@ -229,7 +229,7 @@ def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_
     ax.set_ylabel('Predictions')
     ax.set_xlabel('Inputs')
     ax.grid(True)
-    ax.legend(('Confidence Interval', 'Ground Truth', 'Predictions'),\
+    ax.legend(('Ground Truth', 'Predictions', 'Confidence Interval'),\
                   bbox_to_anchor=(0,1.01,0.9,0.2), mode='expand', loc='lower center', ncol=4,\
                       borderaxespad=0, shadow=False)
 
