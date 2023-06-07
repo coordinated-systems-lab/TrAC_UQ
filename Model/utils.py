@@ -189,8 +189,8 @@ def plot_mse_var(mses: np.ndarray, aggr_var_dict: dict, file_name:str, save_dir:
             continue
         j += 1    
 
-    ax[1,0].set_xlabel('MSE')
-    ax[1,1].set_xlabel('MSE')
+    ax[1,0].set_xlabel('Squared Error')
+    ax[1,1].set_xlabel('Squared Error')
     #ax.legend(('Confidence Interval', 'Predictions', 'Ground Truth'),\
     #              bbox_to_anchor=(0,1.01,0.9,0.2), mode='expand', loc='lower center', ncol=4,\
     #                  borderaxespad=0, shadow=False)
