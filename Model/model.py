@@ -387,7 +387,21 @@ class Ensemble(object):
         allocation_states = allocation.repeat(self.output_dim, 1).T.view(1, -1, self.output_dim) # repeat that for all features now (1,examples,state_dim)
         mu = mu_all.gather(0, allocation_states).squeeze(0)
 
-        return mu       
+        return mu
+    
+    def aggr_mu_bounds(self, aggr_mu: np.array, aggr_var_dict: dict, var_type: str, std_scale: int=1):
+
+        if var_type == 'ensemble_var' or var_type == 'll_var':
+            aggr_std = np.sqrt(aggr_var_dict[var_type])
+        elif var_type == 'ensemble_std':
+            aggr_std = aggr_var_dict[var_type] 
+
+        scaled_std = np.multiply(std_scale, aggr_std)
+
+        lower_bound = aggr_mu - np.multiply(1.96, scaled_std).reshape(-1,1)
+        upper_bound = aggr_mu + np.multiply(1.96, scaled_std).reshape(-1,1)
+
+        return aggr_mu, upper_bound, lower_bound
 
 
 class Model(nn.Module):

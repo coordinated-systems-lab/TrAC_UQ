@@ -229,7 +229,7 @@ def plot_one(mu: np.ndarray, upper_mu: np.ndarray, lower_mu: np.ndarray, ground_
     ax.set_ylabel('Photosynthetic Rate')
     ax.set_xlabel('Inputs')
     ax.grid(True)
-    ax.legend(('Ground Truth', 'Predictions', 'Confidence Interval'),\
+    ax.legend(('Confidence Interval', 'Ground Truth', 'Predictions'),\
                   bbox_to_anchor=(0,1.01,0.9,0.2), mode='expand', loc='lower center', ncol=4,\
                       borderaxespad=0, shadow=False)
 

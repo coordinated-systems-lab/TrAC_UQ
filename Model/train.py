@@ -31,7 +31,7 @@ def train(params: dict):
         ensemble_ins.set_loaders()
         ensemble_ins.train_model(params['model_epochs'], save_model=True)
     if params['test_mode']:
-        if not params['saved_pred_csv']:
+        if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
             ensemble_ins.load_model(params['load_model_dir'])
             sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
             sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val[sorted_val_indices]
@@ -49,26 +49,49 @@ def train(params: dict):
                 mu_unnorm_all[model_no,:] = torch.FloatTensor(mu_unnorm.reshape(-1,)).to(device)
                 logvar_all[model_no,:] = logvar.reshape(-1,)
                 actual_mu_all[model_no,:] = ensemble_ins.output_filter.invert_torch(mu[1].reshape(1,-1))
-                if params['save_pred']:
+                if params['save_all_pred']:
                     save_pred = np.stack((ground_truth.reshape(-1,), mu_unnorm.reshape(-1,),
                                         upper_mu_unnorm.reshape(-1,), lower_mu_unnorm.reshape(-1,)), axis=1)
-                    #np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
+                    np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
                 plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+
             mu_rand = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
             mses = np.square(np.subtract(ground_truth, mu_rand.detach().cpu().numpy()))
             aggr_var_dict = ensemble_ins.aggr_var(['max_aleotoric', 'ensemble_var', 'ensemble_std', 'll_var'], mu_rand,\
                                                   mu_unnorm_all, logvar_all, actual_mu_all)
-            for i in range(2):
-                plot_mse_var(mses, aggr_var_dict, file_name=f"aggr_var{i}.png")
+            
+            if params['plot_se_var']:
+                for i in range(2): # a weird hack to get bigger fonts on the second plot
+                    plot_mse_var(mses, aggr_var_dict, file_name=f"aggr_var{i}.png")
+            aggr_mu, aggr_ub, aggr_lb = ensemble_ins.aggr_mu_bounds(mu_rand.detach().cpu().numpy(), aggr_var_dict,\
+                                                                     'ensemble_std')
+            if params['save_aggr_pred']:
+                save_pred = np.stack((ground_truth.reshape(-1,), aggr_mu.reshape(-1,),
+                                        aggr_ub.reshape(-1,), aggr_lb.reshape(-1,)), axis=1)
+                np.savetxt(f"./../Results/pred_csv_aggr_min_max_norm/preds_{params['load_model_dir'].split('/')[3]}_{params['seed']}.csv", save_pred, delimiter=',')
+            
+
+
         else:
-            start_idx = 22000
-            end_idx = start_idx + 100
-            for model_no, model in ensemble_ins.models.items():         
-                saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
-                ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
-                    saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
-                plot_one(mu_unnorm[start_idx:end_idx], upper_mu_unnorm[start_idx:end_idx], lower_mu_unnorm[start_idx:end_idx],\
-                          ground_truth[start_idx:end_idx], file_name=f"model_{model_no}_pred_{start_idx}.png")
+            if params['saved_pred_csv']:
+                start_idx = 22000
+                end_idx = start_idx + 100
+                for model_no, model in ensemble_ins.models.items():         
+                    saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
+                    ground_truth, mu_unnorm, upper_mu_unnorm, lower_mu_unnorm =\
+                        saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
+                    plot_one(mu_unnorm[start_idx:end_idx], upper_mu_unnorm[start_idx:end_idx], lower_mu_unnorm[start_idx:end_idx],\
+                            ground_truth[start_idx:end_idx], file_name=f"model_{model_no}_pred_{start_idx}.png")
+
+            if params['saved_aggr_mu_csv']:
+                start_idx = 22000
+                end_idx = start_idx + 100
+                saved_data = genfromtxt(params['saved_aggr_mu_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{params['seed']}.csv", delimiter=',')
+                ground_truth, aggr_mu, aggr_ub, aggr_lb =\
+                        saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
+                for i in range(2):
+                    plot_one(aggr_mu[start_idx:end_idx], aggr_ub[start_idx:end_idx], aggr_lb[start_idx:end_idx], ground_truth[start_idx:end_idx],\
+                                file_name=f"pred_csv_aggr_min_max_norm/aggr_{start_idx}_pred.png")    
     return             
 
 def main():
@@ -86,9 +109,13 @@ def main():
     parser.add_argument('--test_mode', type=bool, default=False)
     parser.add_argument('--load_model_dir', type=str, default=None)
     parser.add_argument('--split_type', type=str, default='random') # random | min_max
-    parser.add_argument('--save_pred', type=bool, default=False)
+    parser.add_argument('--mu_aggr_type', type=str, default='random')
+    parser.add_argument('--save_all_pred', type=bool, default=False)
+    parser.add_argument('--save_aggr_pred', type=bool, default=False)
     parser.add_argument('--saved_pred_csv', type=str, default=None)
     parser.add_argument('--swag_sample_select', type=str, default='random') 
+    parser.add_argument('--plot_se_var', type=bool, default=False, help='plot squared_error vs aggregated var')
+    parser.add_argument('--saved_aggr_mu_csv', type=str, default=False, help='plot the aggregated mean and var')
 
     args = parser.parse_args()
     params = vars(args)
