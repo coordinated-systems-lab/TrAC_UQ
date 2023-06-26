@@ -389,6 +389,10 @@ class Ensemble(object):
 
         return mu
     
+    def mean_selection(self, mu_all: torch.Tensor):
+        """return the mean of all predicted means"""
+        return torch.mean(mu_all, dim=0).reshape(-1,1)
+    
     def aggr_mu_bounds(self, aggr_mu: np.array, aggr_var_dict: dict, var_type: str, std_scale: int=1):
 
         if var_type == 'ensemble_var' or var_type == 'll_var':

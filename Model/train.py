@@ -55,26 +55,31 @@ def train(params: dict):
                     np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
                 plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
 
-            mu_rand = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
-            mses = np.square(np.subtract(ground_truth, mu_rand.detach().cpu().numpy()))
-            aggr_var_dict = ensemble_ins.aggr_var(['max_aleotoric', 'ensemble_var', 'ensemble_std', 'll_var'], mu_rand,\
+            if params['mu_aggr_type'] == 'random':
+                mu_aggr = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
+            elif params['mu_aggr_type'] == 'mean':
+                mu_aggr = ensemble_ins.mean_selection(mu_unnorm_all.reshape(params['num_models'],-1))
+            else:
+                raise NotImplementedError    
+
+            mses = np.square(np.subtract(ground_truth, mu_aggr.detach().cpu().numpy()))
+            aggr_var_dict = ensemble_ins.aggr_var(['max_aleotoric', 'ensemble_var', 'ensemble_std', 'll_var'], mu_aggr,\
                                                   mu_unnorm_all, logvar_all, actual_mu_all)
             
             if params['plot_se_var']:
                 for i in range(2): # a weird hack to get bigger fonts on the second plot
                     plot_mse_var(mses, aggr_var_dict, file_name=f"aggr_var{i}.png")
-            aggr_mu, aggr_ub, aggr_lb = ensemble_ins.aggr_mu_bounds(mu_rand.detach().cpu().numpy(), aggr_var_dict,\
-                                                                     'ensemble_std')
+
+            aggr_mu, aggr_ub, aggr_lb = ensemble_ins.aggr_mu_bounds(mu_aggr.detach().cpu().numpy(), aggr_var_dict,\
+                                                                     params['var_aggr_type'])
             if params['save_aggr_pred']:
                 save_pred = np.stack((ground_truth.reshape(-1,), aggr_mu.reshape(-1,),
                                         aggr_ub.reshape(-1,), aggr_lb.reshape(-1,)), axis=1)
-                np.savetxt(f"./../Results/pred_csv_aggr_min_max_norm/preds_{params['load_model_dir'].split('/')[3]}_{params['seed']}.csv", save_pred, delimiter=',')
-            
-
+                np.savetxt(f"./../Results/pred_csv_aggr_min_max_norm/preds_{params['load_model_dir'].split('/')[3]}_{params['mu_aggr_type']}Mu_{params['var_aggr_type']}_{params['seed']}.csv", save_pred, delimiter=',')
 
         else:
             if params['saved_pred_csv']:
-                start_idx = 22000
+                start_idx = 0
                 end_idx = start_idx + 100
                 for model_no, model in ensemble_ins.models.items():         
                     saved_data = genfromtxt(params['saved_pred_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", delimiter=',')
@@ -84,14 +89,16 @@ def train(params: dict):
                             ground_truth[start_idx:end_idx], file_name=f"model_{model_no}_pred_{start_idx}.png")
 
             if params['saved_aggr_mu_csv']:
-                start_idx = 22000
+
+                read_file = params['saved_aggr_mu_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{params['mu_aggr_type']}Mu_{params['var_aggr_type']}_{params['seed']}.csv"
+                start_idx = 0
                 end_idx = start_idx + 100
-                saved_data = genfromtxt(params['saved_aggr_mu_csv']+f"preds_{params['load_model_dir'].split('/')[3]}_{params['seed']}.csv", delimiter=',')
+                saved_data = genfromtxt(read_file, delimiter=',')
                 ground_truth, aggr_mu, aggr_ub, aggr_lb =\
                         saved_data[:,0], saved_data[:,1], saved_data[:,2], saved_data[:,3]
                 for i in range(2):
                     plot_one(aggr_mu[start_idx:end_idx], aggr_ub[start_idx:end_idx], aggr_lb[start_idx:end_idx], ground_truth[start_idx:end_idx],\
-                                file_name=f"pred_csv_aggr_min_max_norm/aggr_{start_idx}_pred.png")    
+                                file_name=f"pred_csv_aggr_min_max_norm/aggr_{start_idx}to{end_idx}_{params['mu_aggr_type']}_{params['var_aggr_type']}_pred.png")    
     return             
 
 def main():
@@ -108,8 +115,9 @@ def main():
     parser.add_argument('--train_mode', type=bool, default=False)
     parser.add_argument('--test_mode', type=bool, default=False)
     parser.add_argument('--load_model_dir', type=str, default=None)
-    parser.add_argument('--split_type', type=str, default='random') # random | min_max
-    parser.add_argument('--mu_aggr_type', type=str, default='random')
+    parser.add_argument('--split_type', type=str, default='random', choices=['random', 'min_max'])
+    parser.add_argument('--mu_aggr_type', type=str, default='random', choices=['random', 'mean']) 
+    parser.add_argument('--var_aggr_type', type=str, default='ensemble_std', choices=['ensemble_std', 'ensemble_var', 'll_var', 'max_aleotoric']) 
     parser.add_argument('--save_all_pred', type=bool, default=False)
     parser.add_argument('--save_aggr_pred', type=bool, default=False)
     parser.add_argument('--saved_pred_csv', type=str, default=None)
