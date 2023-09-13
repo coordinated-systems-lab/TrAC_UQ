@@ -357,14 +357,14 @@ class Ensemble(object):
         if 'ensemble_var' in aggr_var:
             nextstates_var = logvar_all.exp()
             mean_of_vars = torch.mean(nextstates_var, dim=0)
-            var_of_means = torch.var(mu_unnorm_all, dim=0)
+            var_of_means = torch.var(mu_unnorm_all, dim=0, unbiased=False)
             vr = mean_of_vars + var_of_means
             var_aggr = torch.mean(vr, dim=1)
             aggr_var_dict['ensemble_var'] = var_aggr.detach().cpu().numpy()
         if 'ensemble_std' in aggr_var:
             nextstates_var = logvar_all.exp()
             mean_of_vars = torch.mean(nextstates_var, dim=0)
-            var_of_means = torch.var(mu_unnorm_all, dim=0)
+            var_of_means = torch.var(mu_unnorm_all, dim=0, unbiased=False)
             std = (mean_of_vars + var_of_means).sqrt()
             var_aggr = torch.mean(std, dim=1)
             aggr_var_dict['ensemble_std'] = var_aggr.detach().cpu().numpy()
@@ -424,8 +424,8 @@ class Model(nn.Module):
     def forward(self, x: torch.Tensor):
         return self.model(x)
 
-    def get_next_state_reward(self, input: torch.Tensor, deterministic=False, return_mean=False):
-        return self.model.get_next_state_reward(input, deterministic, return_mean)
+    def get_next_state(self, input: torch.Tensor, deterministic=False, return_mean=False):
+        return self.model.get_next_state(input, deterministic, return_mean)
 
     def _train_model_forward(self, x_batch):
         self.model.train()    # TRAINING MODE
@@ -539,7 +539,7 @@ class BayesianNeuralNetwork(nn.Module):
 
         return torch.cat((delta, logvar), dim=1)
 
-    def get_next_state_reward(self, input: torch.Tensor, deterministic=False, return_mean=False):
+    def get_next_state(self, input: torch.Tensor, deterministic=False, return_mean=False):
         input_torch = torch.FloatTensor(input).to(device)
         mu, logvar = self.forward(input_torch).chunk(2, dim=1)
         mu_orig = mu
