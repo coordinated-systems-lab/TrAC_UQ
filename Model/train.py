@@ -130,12 +130,12 @@ def train(params: dict):
                                     mu_unnorm_all, logvar_all, actual_mu_all)       
         
         if params['num_models'] == 1:
-            print(mu_aggr.detach().cpu().numpy().reshape(-1,))
-            print(logvar_all.exp().detach().cpu().numpy().reshape(-1,))
+            #print(mu_aggr.detach().cpu().numpy().reshape(-1,))
+            #print(logvar_all.exp().detach().cpu().numpy().reshape(-1,))
             return mu_aggr.detach().cpu().numpy().reshape(-1,), logvar_all.exp().detach().cpu().numpy().reshape(-1,) # sending mu_aggr since mu[0] is unnormalized
         else:
             print(mu_aggr.detach().cpu().numpy().reshape(-1,))
-            print(aggr_var_dict['ensemble_var'])
+            #print(aggr_var_dict['ensemble_var'])
             return mu_aggr.detach().cpu().numpy().reshape(-1,), aggr_var_dict['ensemble_var']
 
 
@@ -176,7 +176,7 @@ def main():
                 if config in params:
                     params[config] = yaml_config['args'][config]
 
-    train(params)                
+    mu, var = train(params)               
 
 if __name__ == '__main__':
     main()
