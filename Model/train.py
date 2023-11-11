@@ -54,7 +54,7 @@ def train(params: dict):
                         save_pred = np.stack((ground_truth.reshape(-1,), mu_unnorm.reshape(-1,),
                                             upper_mu_unnorm.reshape(-1,), lower_mu_unnorm.reshape(-1,)), axis=1)
                         np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
-                    plot_one(mu_unnorm[:100], upper_mu_unnorm[:100], lower_mu_unnorm[:100], ground_truth[:100], file_name=f"model_{model_no}_pred.png")
+                    plot_one(mu_unnorm[800:900], upper_mu_unnorm[800:900], lower_mu_unnorm[800:900], ground_truth[800:900], file_name=f"model_{model_no}_pred.png")
 
                 if params['mu_aggr_type'] == 'random':
                     mu_aggr = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
@@ -134,7 +134,7 @@ def train(params: dict):
             #print(logvar_all.exp().detach().cpu().numpy().reshape(-1,))
             return mu_aggr.detach().cpu().numpy().reshape(-1,), logvar_all.exp().detach().cpu().numpy().reshape(-1,) # sending mu_aggr since mu[0] is unnormalized
         else:
-            print(mu_aggr.detach().cpu().numpy().reshape(-1,))
+            #print(mu_aggr.detach().cpu().numpy().reshape(-1,))
             #print(aggr_var_dict['ensemble_var'])
             return mu_aggr.detach().cpu().numpy().reshape(-1,), aggr_var_dict['ensemble_var']
 
@@ -176,7 +176,10 @@ def main():
                 if config in params:
                     params[config] = yaml_config['args'][config]
 
-    mu, var = train(params)               
+    if not params['matlab_inference']:
+        train(params)
+    else:    
+        mu, var = train(params)               
 
 if __name__ == '__main__':
     main()

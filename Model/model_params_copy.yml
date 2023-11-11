@@ -1,0 +1,23 @@
+args:
+    seed: 0
+    data_dir: "../Data/crop_model_sample_data_CO2_balance_v2.csv"
+    model_epochs: 1000
+    model_lr: 0.001
+    l2_reg_multiplier: 1 
+    min_model_epochs: 0
+    #train_mode: True
+    test_mode: True
+    #save_all_pred: True
+    #save_aggr_pred : True    
+    #split_type: 'min_max_norm'
+    mu_aggr_type: 'random'
+    var_aggr_type: 'ensemble_var'
+    load_model_dir: "./checkpoints/model_saved_weights/Model_seed0_random_2023_11_10_18-00-20" #Model_seed0_random_2023_05_29_23-52-22
+    #saved_pred_csv: "./../Results/pred_csv_min_max_norm/"
+    #saved_aggr_mu_csv: "./../Results/pred_csv_aggr_min_max_norm/"
+    # PARAMETERS FOR INFERENCE MATLAB
+    #matlab_inference: True # True if using with MATLAB
+    # [[0.20851,24.596,0.0,0.81587],[0.36016,35.211,0.0,0.8882],[5.8187e-05,10.004,0.0,1.0176]] for three inputs and same goes for batch of n inputs  
+    input_features: [0.20851,24.596,0.0,0.81587] # for 1 input
+    num_models: 7 # set number of models to be used for ensemble
+    # output will be 1D numpy array of n elements: mu = [1,2,...,n]; var = [1,2,...,n] where n is the number of inputs     
