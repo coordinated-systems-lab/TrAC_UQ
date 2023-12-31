@@ -17,9 +17,8 @@ def train(params: dict):
     #random.seed(params['seed'])
 
     orig_data = genfromtxt(params['data_dir'], delimiter=',')
-    params['input_data'] = np.array(orig_data[1:,1:5])
-    params['output_data'] = np.array(orig_data[1:,5]).reshape(-1,1)
-
+    params['input_data'] = np.array(orig_data[1:,1:7])
+    params['output_data'] = np.array(orig_data[1:,7]).reshape(-1,1)
     params['no_of_inputs'] = params['input_data'].shape[1]
     params['no_of_outputs'] = 1
 
@@ -33,6 +32,8 @@ def train(params: dict):
             ensemble_ins.train_model(params['model_epochs'], save_model=True)
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
+
+                start, end = 13000, 13100
                 ensemble_ins.load_model(params['load_model_dir'])
                 sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
                 sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val[sorted_val_indices]
@@ -54,7 +55,7 @@ def train(params: dict):
                         save_pred = np.stack((ground_truth.reshape(-1,), mu_unnorm.reshape(-1,),
                                             upper_mu_unnorm.reshape(-1,), lower_mu_unnorm.reshape(-1,)), axis=1)
                         np.savetxt(f"./../Results/pred_csv/preds_{params['load_model_dir'].split('/')[3]}_{model_no}_{params['seed']}.csv", save_pred, delimiter=',')
-                    plot_one(mu_unnorm[800:900], upper_mu_unnorm[800:900], lower_mu_unnorm[800:900], ground_truth[800:900], file_name=f"model_{model_no}_pred.png")
+                    plot_one(mu_unnorm[start:end], upper_mu_unnorm[start:end], lower_mu_unnorm[start:end], ground_truth[start:end], file_name=f"model_{model_no}_pred_{start}_{end}.png")
 
                 if params['mu_aggr_type'] == 'random':
                     mu_aggr = ensemble_ins.random_selection(mu_unnorm_all.reshape(params['num_models'],-1,1), mu_unnorm_all.shape[1])
