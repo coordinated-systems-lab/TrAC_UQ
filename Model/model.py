@@ -103,7 +103,7 @@ class Ensemble(object):
         self.train_size = int((1-self.train_val_ratio)*input_filtered.shape[0])
         self.val_size = input_filtered.shape[0] - self.train_size
 
-        ########## MIX VALIDATION AND TRAINING ##########
+        ########## MIX VALIDATION AND TRAINING 
 
         if self.params['split_type'] == 'random':        
             randperm = np.random.permutation(self.train_size + self.val_size)
@@ -117,6 +117,21 @@ class Ensemble(object):
             idx_min_max_train, idx_min_max_test = idx_norm_min_max_input_data[:self.train_size], idx_norm_min_max_input_data[self.train_size:]
             train_idx = idx_min_max_train
             val_idx = idx_min_max_test 
+        elif self.params['split_type'] == 'feature_ordering':
+            samp_select_lwp = int(0.45*self.val_size) # 20k
+            samp_select_swp = int(0.35*self.val_size) # 16k
+            samp_select_tleaf = self.val_size - (samp_select_lwp + samp_select_swp) # 9k
+            idx_select_lwp = np.argsort(self.output_data)[:samp_select_lwp].reshape(-1,)
+            sort_idx_swp = np.argsort(self.input_data[:,-1])
+            idx_select_swp = sort_idx_swp[~np.isin(sort_idx_swp,idx_select_lwp)][:samp_select_swp]
+            sort_idx_tleaf = np.argsort(self.input_data[:,-2])
+            sort_idx_tleaf = sort_idx_tleaf[~np.isin(sort_idx_tleaf,idx_select_lwp)]
+            idx_select_tleaf = sort_idx_tleaf[~np.isin(sort_idx_tleaf,idx_select_swp)][:samp_select_tleaf]
+            val_idx = np.concatenate((idx_select_lwp,idx_select_swp,idx_select_tleaf))
+            train_idx = np.linspace(0, self.train_size+self.val_size-1, self.train_size+self.val_size-1,dtype=np.int32)
+            #print(np.any(np.isin(idx_select_swp,idx_select_lwp)))
+            #print(np.any(np.isin(idx_select_tleaf,idx_select_lwp)))
+            #print(np.any(np.isin(idx_select_tleaf,idx_select_swp)))
 
         self.rand_input_train = self.input_data[train_idx,:]
         self.rand_input_val = self.input_data[val_idx,:]        
@@ -152,7 +167,7 @@ class Ensemble(object):
         self.current_best_losses = np.zeros(          # params['num_models'] = 7
             self.params['num_models']) + sys.maxsize  # weird hack (YLTSI), there's almost surely a better way...
         self.current_best_weights = [None] * self.params['num_models']
-        val_improve = deque(maxlen=6)
+        val_improve = deque(maxlen=4)
         lr_lower = False
         min_model_epochs = 0 if not min_model_epochs else min_model_epochs
 
@@ -203,7 +218,7 @@ class Ensemble(object):
                     plural = 's' if epoch_diff > 1 else ''
                     print('No improvement detected this epoch: {} Epoch{} since last improvement.'.format(epoch_diff,plural))
                                                                                           
-                if len(val_improve) > 5:
+                if len(val_improve) > 3:
                     if not any(np.array(val_improve)[1:]):  # If no improvement in the last 5 epochs
                         # assert val_improve[0]
                         if (i >= min_model_epochs):

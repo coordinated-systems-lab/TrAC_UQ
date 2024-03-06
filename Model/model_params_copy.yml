@@ -9,10 +9,10 @@ args:
     test_mode: True
     #save_all_pred: True
     #save_aggr_pred : True    
-    split_type: 'min_max_norm'
+    split_type: 'feature_ordering'
     mu_aggr_type: 'random'
     var_aggr_type: 'ensemble_var'
-    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_random_2023_12_31_15-16-20" #Model_seed0_random_2023_05_29_23-52-22
+    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_feature_ordering_2024_03_05_17-11-00" #Model_seed0_random_2023_05_29_23-52-22
     #saved_pred_csv: "./../Results/pred_csv_min_max_norm/"
     #saved_aggr_mu_csv: "./../Results/pred_csv_aggr_min_max_norm/"
     # PARAMETERS FOR INFERENCE MATLAB

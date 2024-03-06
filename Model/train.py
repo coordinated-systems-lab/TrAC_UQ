@@ -22,7 +22,6 @@ def train(params: dict):
     params['no_of_inputs'] = params['input_data'].shape[1]
     params['no_of_outputs'] = 1
 
-
     ensemble_ins = Ensemble(params=params)
 
     if not params['matlab_inference']:         
@@ -33,11 +32,11 @@ def train(params: dict):
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
 
-                start, end = 13000, 13100
+                start, end = 570, 670
                 ensemble_ins.load_model(params['load_model_dir'])
-                sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
-                sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val[sorted_val_indices]
-                sorted_rand_output_filtered_val = ensemble_ins.rand_output_filtered_val[sorted_val_indices]
+                #sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
+                sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val
+                sorted_rand_output_filtered_val = ensemble_ins.rand_output_filtered_val
                 ground_truth = ensemble_ins.output_filter.invert(sorted_rand_output_filtered_val)
                 # for aggregated mean and variance 
                 mu_unnorm_all = torch.zeros(params['num_models'], sorted_rand_input_filtered_val.shape[0], device=device)
