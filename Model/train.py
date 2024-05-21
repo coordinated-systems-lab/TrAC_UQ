@@ -17,8 +17,8 @@ def train(params: dict):
     #random.seed(params['seed'])
 
     orig_data = genfromtxt(params['data_dir'], delimiter=',')
-    params['input_data'] = np.array(orig_data[1:,1:7])
-    params['output_data'] = np.array(orig_data[1:,7]).reshape(-1,1)
+    params['input_data'] = np.array(orig_data[1:,1:5])
+    params['output_data'] = np.array(orig_data[1:,5]).reshape(-1,1)
     params['no_of_inputs'] = params['input_data'].shape[1]
     params['no_of_outputs'] = 1
 
@@ -32,7 +32,7 @@ def train(params: dict):
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
 
-                start, end = 570, 670
+                start, end = 770, 870
                 ensemble_ins.load_model(params['load_model_dir'])
                 #sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
                 sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val
@@ -152,7 +152,7 @@ def main():
     parser.add_argument('--train_mode', type=bool, default=False)
     parser.add_argument('--test_mode', type=bool, default=False)
     parser.add_argument('--load_model_dir', type=str, default=None)
-    parser.add_argument('--split_type', type=str, default='random', choices=['random', 'min_max'])
+    parser.add_argument('--split_type', type=str, default='random', choices=['random','min_max','feature_ordering'])
     parser.add_argument('--mu_aggr_type', type=str, default='random', choices=['random', 'mean']) 
     parser.add_argument('--var_aggr_type', type=str, default='ensemble_std', choices=['ensemble_std', 'ensemble_var', 'll_var', 'max_aleotoric']) 
     parser.add_argument('--save_all_pred', type=bool, default=False)

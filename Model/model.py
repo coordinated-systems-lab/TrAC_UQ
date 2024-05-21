@@ -83,7 +83,7 @@ class Ensemble(object):
         self.input_filter = MeanStdevFilter(self.input_dim) 
         self.output_filter = MeanStdevFilter(self.output_dim)
 
-        self._model_id = "Model_water_seed{}_{}_{}".format(params['seed'], params['split_type'],\
+        self._model_id = "Model_water_seed{}_{}_{}_greeley".format(params['seed'], params['split_type'],\
                                                 datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'))
 
     def calculate_mean_var(self):
