@@ -13,13 +13,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train(params: dict):
 
-    #np.random.seed(params['seed'])
-    #random.seed(params['seed'])
+    np.random.seed(params['seed'])
+    random.seed(params['seed'])
 
     orig_data = genfromtxt(params['data_dir'], delimiter=',')
     params['input_data'] = np.array(orig_data[1:,1:5])
     params['output_data'] = np.array(orig_data[1:,5]).reshape(-1,1)
-    params['no_of_inputs'] = params['input_data'].shape[1]
+    rand_idx = np.random.randint(low=0, high=params['input_data'].shape[0],\
+                                  size=(int(0.1*params['input_data'].shape[0]),1))
+    params['input_data'] =  params['input_data'][rand_idx.reshape(-1),:]
+    params['output_data'] =  params['output_data'][rand_idx.reshape(-1),:]
+    params['no_of_inputs'] = params['input_data'].shape[1] 
     params['no_of_outputs'] = 1
 
     ensemble_ins = Ensemble(params=params)
@@ -32,7 +36,7 @@ def train(params: dict):
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
 
-                start, end = 770, 870
+                start, end = 910, 1010
                 ensemble_ins.load_model(params['load_model_dir'])
                 #sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
                 sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val

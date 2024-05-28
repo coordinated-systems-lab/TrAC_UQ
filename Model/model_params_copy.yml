@@ -1,6 +1,6 @@
 args:
     seed: 0
-    data_dir: "../Data/crop_model_simulated_data_CO2_balance_greeley.csv"
+    data_dir: "../Data/crop_model_sample_data_CO2_balance_v2.csv"
     model_epochs: 1000
     model_lr: 0.001
     l2_reg_multiplier: 1 
@@ -12,7 +12,7 @@ args:
     #split_type: 'feature_ordering'
     mu_aggr_type: 'random'
     var_aggr_type: 'ensemble_var'
-    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_random_2024_05_20_18-14-42_greeley" #Model_seed0_random_2023_05_29_23-52-22
+    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_random_2024_05_28_16-34-38_0.5Data_4Layers_200Neurons" #Model_seed0_random_2023_05_29_23-52-22
     #saved_pred_csv: "./../Results/pred_csv_min_max_norm/"
     #saved_aggr_mu_csv: "./../Results/pred_csv_aggr_min_max_norm/"
     # PARAMETERS FOR INFERENCE MATLAB

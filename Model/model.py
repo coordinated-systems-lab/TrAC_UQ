@@ -21,6 +21,7 @@ import pickle
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+# 100, 50, 10 % uniformly random
 class TransitionDataset(Dataset):
     ## Dataset wrapper for sampled transitions
     def __init__(self, input_data, output_data):
@@ -83,7 +84,7 @@ class Ensemble(object):
         self.input_filter = MeanStdevFilter(self.input_dim) 
         self.output_filter = MeanStdevFilter(self.output_dim)
 
-        self._model_id = "Model_water_seed{}_{}_{}_greeley".format(params['seed'], params['split_type'],\
+        self._model_id = "Model_water_seed{}_{}_{}_0.1Data".format(params['seed'], params['split_type'],\
                                                 datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'))
 
     def calculate_mean_var(self):
@@ -518,7 +519,7 @@ class BayesianNeuralNetwork(nn.Module):
         self.max_logvar = None
         self.min_logvar = None
         params = [] # 12 dicts for all layers (w and b) from get_weight_bias_parameters_with_decays method 
-        self.layers = [self.fc1, self.fc2, self.fc3, self.fc4, self.delta, self.logvar]
+        self.layers = [self.fc1, self.fc2, self.fc3, self.fc4, self.delta, self.logvar] #
         self.decays = np.array([0.000025, 0.00005, 0.000075, 0.000075, 0.0001, 0.0001]) * l2_reg_multiplier
         for layer, decay in zip(self.layers, self.decays):
             params.extend(get_weight_bias_parameters_with_decays(layer, decay))
