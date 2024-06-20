@@ -6,6 +6,7 @@ args:
     l2_reg_multiplier: 1 
     num_layers: 4
     num_nodes: 200
+    frac_of_data: 0.1
     min_model_epochs: 0
     train_mode: False
     test_mode: True
