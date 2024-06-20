@@ -4,6 +4,9 @@ args:
     model_epochs: 1000
     model_lr: 0.001
     l2_reg_multiplier: 1 
+    num_layers: 2
+    num_nodes: 5
+    frac_of_data: 0.1
     min_model_epochs: 0
     #train_mode: True
     test_mode: True
@@ -12,7 +15,7 @@ args:
     #split_type: 'feature_ordering'
     mu_aggr_type: 'random'
     var_aggr_type: 'ensemble_var'
-    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_random_2024_05_28_16-34-38_0.5Data_4Layers_200Neurons" #Model_seed0_random_2023_05_29_23-52-22
+    load_model_dir: "./checkpoints/model_saved_weights/Model_water_seed0_random_2024_05_28_17-31-34_0.5Data_2Layers_5Neurons" #Model_seed0_random_2023_05_29_23-52-22
     #saved_pred_csv: "./../Results/pred_csv_min_max_norm/"
     #saved_aggr_mu_csv: "./../Results/pred_csv_aggr_min_max_norm/"
     # PARAMETERS FOR INFERENCE MATLAB

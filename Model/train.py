@@ -20,7 +20,7 @@ def train(params: dict):
     params['input_data'] = np.array(orig_data[1:,1:5])
     params['output_data'] = np.array(orig_data[1:,5]).reshape(-1,1)
     rand_idx = np.random.randint(low=0, high=params['input_data'].shape[0],\
-                                  size=(int(0.1*params['input_data'].shape[0]),1))
+                                  size=(int(params['frac_of_data']*params['input_data'].shape[0]),1))
     params['input_data'] =  params['input_data'][rand_idx.reshape(-1),:]
     params['output_data'] =  params['output_data'][rand_idx.reshape(-1),:]
     params['no_of_inputs'] = params['input_data'].shape[1] 
@@ -36,7 +36,7 @@ def train(params: dict):
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
 
-                start, end = 910, 1010
+                start, end = 870, 970
                 ensemble_ins.load_model(params['load_model_dir'])
                 #sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
                 sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val
@@ -152,7 +152,10 @@ def main():
     parser.add_argument('--model_epochs', '-me', type=int, default=200)
     parser.add_argument('--model_lr', type=float, default=0.001, help='lr for Transition Model')
     parser.add_argument('--l2_reg_multiplier', type=float, default=1.)
+    parser.add_argument('--frac_of_data', type=float, default=1.0)
     parser.add_argument('--min_model_epochs', type=int, default=None)
+    parser.add_argument('--num_layers', type=int, default=None)
+    parser.add_argument('--num_nodes', type=int, default=None)
     parser.add_argument('--train_mode', type=bool, default=False)
     parser.add_argument('--test_mode', type=bool, default=False)
     parser.add_argument('--load_model_dir', type=str, default=None)

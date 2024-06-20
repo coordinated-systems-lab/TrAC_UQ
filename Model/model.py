@@ -63,6 +63,8 @@ class Ensemble(object):
         self.output_dim = params['no_of_outputs']
         self.models = {i: Model(input_dim=self.input_dim,
                                 output_dim=self.output_dim,
+                                params=params,
+                                h=params['num_nodes'],
                                 seed=params['seed'] + i,
                                 l2_reg_multiplier=params['l2_reg_multiplier'],
                                 num=i)
@@ -427,6 +429,7 @@ class Ensemble(object):
 class Model(nn.Module):
     def __init__(self, input_dim: int,
                  output_dim: int,
+                 params: dict,
                  h: int = 1024,
                  seed=0,
                  l2_reg_multiplier=1.,
@@ -434,7 +437,7 @@ class Model(nn.Module):
 
         super(Model, self).__init__()
         torch.manual_seed(seed)
-        self.model = BayesianNeuralNetwork(input_dim, output_dim, 200, l2_reg_multiplier, seed)
+        self.model = BayesianNeuralNetwork(input_dim, output_dim, params, h, l2_reg_multiplier, seed)
         self.weights = self.model.weights
 
     def forward(self, x: torch.Tensor):
@@ -494,34 +497,41 @@ class Model(nn.Module):
 class BayesianNeuralNetwork(nn.Module):
     def __init__(self, input_dim: int,
                  output_dim: int,
+                 params: dict,
                  h: int = 200,
                  l2_reg_multiplier=1.,
                  seed=0):
         super().__init__()
         torch.manual_seed(seed)
         #del self.network
+        self.params = params
         self.fc1 = nn.Linear(input_dim, h)
         reinitialize_fc_layer_(self.fc1)
-        self.fc2 = nn.Linear(h, h)
-        reinitialize_fc_layer_(self.fc2)
-        self.fc3 = nn.Linear(h, h)
-        reinitialize_fc_layer_(self.fc3)
-        self.fc4 = nn.Linear(h, h)
-        reinitialize_fc_layer_(self.fc4)
-        self.use_blr = False
+        self.layers = [self.fc1]
+        for i in range(params['num_layers']-1):
+            setattr(self, f"fc{i+2}", nn.Linear(h, h))
+            self.layers.append(getattr(self, f"fc{i+2}"))
+            reinitialize_fc_layer_(self.layers[i+1])   
+        #self.fc2 = nn.Linear(h, h)
+        #reinitialize_fc_layer_(self.fc2)
+        #self.fc3 = nn.Linear(h, h)
+        #reinitialize_fc_layer_(self.fc3)
+        #self.fc4 = nn.Linear(h, h)
+        #reinitialize_fc_layer_(self.fc4)
         self.delta = nn.Linear(h, output_dim)
         reinitialize_fc_layer_(self.delta)
         self.logvar = nn.Linear(h, output_dim)
         reinitialize_fc_layer_(self.logvar)
+        self.layers_all = self.layers + [self.delta] + [self.logvar]
         self.loss = GaussianMSELoss()
         self.activation = nn.SiLU()
         self.lambda_prec = 1.0
         self.max_logvar = None
         self.min_logvar = None
         params = [] # 12 dicts for all layers (w and b) from get_weight_bias_parameters_with_decays method 
-        self.layers = [self.fc1, self.fc2, self.fc3, self.fc4, self.delta, self.logvar] #
+        #self.layers_all = [self.fc1, self.fc2, self.fc3, self.fc4, self.delta, self.logvar] #
         self.decays = np.array([0.000025, 0.00005, 0.000075, 0.000075, 0.0001, 0.0001]) * l2_reg_multiplier
-        for layer, decay in zip(self.layers, self.decays):
+        for layer, decay in zip(self.layers_all, self.decays):
             params.extend(get_weight_bias_parameters_with_decays(layer, decay))
         self.weights = params
         self.to(device)
@@ -533,7 +543,7 @@ class BayesianNeuralNetwork(nn.Module):
 
     def get_l2_reg_loss(self):
         l2_loss = 0
-        for layer, decay in zip(self.layers, self.decays):
+        for layer, decay in zip(self.layers_all, self.decays):
             for name, parameter in layer.named_parameters():
                 if 'weight' in name:
                     l2_loss += parameter.pow(2).sum() / 2 * decay
@@ -543,12 +553,17 @@ class BayesianNeuralNetwork(nn.Module):
         self.max_logvar, self.min_logvar = max_logvar, min_logvar
 
     def forward(self, x: torch.Tensor):
+        for layer in self.layers:
+            x = self.activation(layer(x))
+        """    
         x = self.activation(self.fc1(x))
         x = self.activation(self.fc2(x))
         x = self.activation(self.fc3(x))
         x = self.activation(self.fc4(x))
+        """
         delta = self.delta(x)
         logvar = self.logvar(x)
+
         # Taken from the PETS code to stabilise training (https://github.com/kchua/handful-of-trials)
         logvar = self.max_logvar - F.softplus(self.max_logvar - logvar)
         logvar = self.min_logvar + F.softplus(logvar - self.min_logvar)
