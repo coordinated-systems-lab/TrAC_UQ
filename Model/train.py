@@ -36,7 +36,7 @@ def train(params: dict):
         if params['test_mode']:
             if not params['saved_pred_csv'] and not params['saved_aggr_mu_csv']:
 
-                start, end = 870, 970
+                start, end = 880, 980
                 ensemble_ins.load_model(params['load_model_dir'])
                 #sorted_val_indices = find_min_distances(ensemble_ins.rand_input_val, ensemble_ins.rand_input_train)
                 sorted_rand_input_filtered_val = ensemble_ins.rand_input_filtered_val

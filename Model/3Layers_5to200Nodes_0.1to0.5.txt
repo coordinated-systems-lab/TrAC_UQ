@@ -1,0 +1,201 @@
+nohup: ignoring input
+Training Arch No. 1
+Running 3 layers and 5 nodes with 10.0% of data
+Best Validation Losses So Far:
+M0: 0.02485785074532032	M1: 0.23295597732067108	M2: 0.01643330045044422	M3: 0.018300741910934448	M4: 0.23480135202407837	M5: 0.01373782567679882	M6: 0.020454667508602142
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 450 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights dir not found, creating it
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_25_22-53-04_0.1Data_3Layers_5Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 2
+Running 3 layers and 50 nodes with 10.0% of data
+M0: 0.0008656828431412578	M1: 0.0009309399756602943	M2: 0.001117694890126586	M3: 0.0010172000620514154	M4: 0.0009780200198292732	M5: 0.0010386327048763633	M6: 0.0012760682730004191
+Best Validation Losses So Far:
+M0: 0.0008399477228522301	M1: 0.000936246186029166	M2: 0.00108423235360533	M3: 0.0010018598986789584	M4: 0.0009445804753340781	M5: 0.0010095275938510895	M6: 0.001274209120310843
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 713 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_25_23-04-38_0.1Data_3Layers_50Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 3
+Running 3 layers and 100 nodes with 10.0% of data
+M0: 0.00045966787729412317	M1: 0.0004449184925761074	M2: 0.0006705853738822043	M3: 0.000473807449452579	M4: 0.00040414842078462243	M5: 0.00036436173832044005	M6: 0.0003811805509030819
+Best Validation Losses So Far:
+M0: 0.00045594683615490794	M1: 0.0004376180295366794	M2: 0.0005394206964410841	M3: 0.00042511746869422495	M4: 0.000378357304725796	M5: 0.00034106915700249374	M6: 0.00035392085555940866
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 491 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_25_23-22-51_0.1Data_3Layers_100Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 4
+Running 3 layers and 200 nodes with 10.0% of data
+M0: 0.00010451448906678706	M1: 9.468067582929507e-05	M2: 0.00014809082495048642	M3: 9.23269908525981e-05	M4: 0.0001068337878677994	M5: 0.00015615478332620114	M6: 0.00014061636466067284
+Best Validation Losses So Far:
+M0: 7.942003867356107e-05	M1: 9.403494914295152e-05	M2: 0.00010283294977853075	M3: 7.9380399256479e-05	M4: 0.00010079493949888274	M5: 0.00011043639096897095	M6: 0.00010911179560935125
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 519 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_25_23-35-35_0.1Data_3Layers_200Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 5
+Running 3 layers and 5 nodes with 20.0% of data
+M0: 0.025188254192471504	M1: 0.23411822319030762	M2: 0.012556072324514389	M3: 0.04225547984242439	M4: 0.23985809087753296	M5: 0.005118472967296839	M6: 0.0247489120811224
+Best Validation Losses So Far:
+M0: 0.024947308003902435	M1: 0.23521779477596283	M2: 0.012530657462775707	M3: 0.019847054034471512	M4: 0.24074393510818481	M5: 0.005035454872995615	M6: 0.02461191639304161
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 448 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_25_23-49-18_0.2Data_3Layers_5Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 6
+Running 3 layers and 50 nodes with 20.0% of data
+M0: 0.0008177609415724874	M1: 0.000536428124178201	M2: 0.0005312605644576252	M3: 0.0007703467854298651	M4: 0.00041114279883913696	M5: 0.000718461989890784	M6: 0.0005732016288675368
+Best Validation Losses So Far:
+M0: 0.0007927215192466974	M1: 0.0005191153613850474	M2: 0.0004942078958265483	M3: 0.0007248544716276228	M4: 0.0003928109654225409	M5: 0.0007183199631981552	M6: 0.0005650439998134971
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 727 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_00-12-00_0.2Data_3Layers_50Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 7
+Running 3 layers and 100 nodes with 20.0% of data
+M0: 0.0003236355260014534	M1: 0.00036319324863143265	M2: 0.00023424778191838413	M3: 0.00025240652030333877	M4: 0.0003045503399334848	M5: 0.00029329248354770243	M6: 0.00026036580675281584
+Best Validation Losses So Far:
+M0: 0.00032432202715426683	M1: 0.0003578801697585732	M2: 0.0002299756306456402	M3: 0.0002456105430610478	M4: 0.0002952554787043482	M5: 0.0002901690313592553	M6: 0.0002532195649109781
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 530 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_00-48-41_0.2Data_3Layers_100Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 8
+Running 3 layers and 200 nodes with 20.0% of data
+M0: 7.906099926913157e-05	M1: 0.00012090941163478419	M2: 8.618840365670621e-05	M3: 9.72191701293923e-05	M4: 0.00011245249334024265	M5: 0.00019015777797903866	M6: 0.00011395276669645682
+Best Validation Losses So Far:
+M0: 7.489237759727985e-05	M1: 8.566649194108322e-05	M2: 8.154138777172193e-05	M3: 8.197218994610012e-05	M4: 8.683872874826193e-05	M5: 8.319316839333624e-05	M6: 0.00010181380639551207
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 287 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_01-16-06_0.2Data_3Layers_200Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 9
+Running 3 layers and 5 nodes with 30.0% of data
+M0: 0.025409840047359467	M1: 0.006810604594647884	M2: 0.017896784469485283	M3: 0.04304209724068642	M4: 0.2362803965806961	M5: 0.011245041154325008	M6: 0.024494534358382225
+Best Validation Losses So Far:
+M0: 0.02551945485174656	M1: 0.0066332267597317696	M2: 0.018007075414061546	M3: 0.019303729757666588	M4: 0.23759403824806213	M5: 0.011167413555085659	M6: 0.024485690519213676
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 293 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_01-31-53_0.3Data_3Layers_5Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 10
+Running 3 layers and 50 nodes with 30.0% of data
+M0: 0.0008538257679902017	M1: 0.0005503492429852486	M2: 0.0004543367540463805	M3: 0.0007262534345500171	M4: 0.0005287319654598832	M5: 0.0005591999506577849	M6: 0.0004426973464433104
+Best Validation Losses So Far:
+M0: 0.0008382111554965377	M1: 0.0005480324034579098	M2: 0.0004455694870557636	M3: 0.0007151176687330008	M4: 0.0005119021516293287	M5: 0.0005552014335989952	M6: 0.0004436646122485399
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 610 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_01-54-41_0.3Data_3Layers_50Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 11
+Running 3 layers and 100 nodes with 30.0% of data
+M0: 0.00013122842938173562	M1: 8.216647984227166e-05	M2: 0.00013690379273612052	M3: 0.00012273185711819679	M4: 0.00017874580225907266	M5: 0.00012855473323725164	M6: 9.450674406252801e-05
+Best Validation Losses So Far:
+M0: 0.00011998663103440776	M1: 7.829775859136134e-05	M2: 0.00011228775838389993	M3: 0.00010752106027211994	M4: 0.00016458942263852805	M5: 0.0001235015515703708	M6: 8.838198118610308e-05
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 877 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_02-41-28_0.3Data_3Layers_100Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 12
+Running 3 layers and 200 nodes with 30.0% of data
+M0: 4.987807187717408e-05	M1: 5.1473478379193693e-05	M2: 6.267969001783058e-05	M3: 8.231512038037181e-05	M4: 7.297644333448261e-05	M5: 5.734021033276804e-05	M6: 6.23664163867943e-05
+Best Validation Losses So Far:
+M0: 3.7742011045338586e-05	M1: 4.2340700019849464e-05	M2: 4.605367939802818e-05	M3: 4.1989020246546715e-05	M4: 5.9233228967059404e-05	M5: 4.4698670535581186e-05	M6: 4.763441393151879e-05
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 380 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_03-47-46_0.3Data_3Layers_200Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 13
+Running 3 layers and 5 nodes with 40.0% of data
+M0: 0.02310333214700222	M1: 0.005775481462478638	M2: 0.011921009048819542	M3: 0.041219133883714676	M4: 0.24439361691474915	M5: 0.01534393522888422	M6: 0.018060259521007538
+Best Validation Losses So Far:
+M0: 0.02309412695467472	M1: 0.005790312774479389	M2: 0.01197666022926569	M3: 0.01956195756793022	M4: 0.24458585679531097	M5: 0.01501600630581379	M6: 0.01785574108362198
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 349 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_04-18-11_0.4Data_3Layers_5Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 14
+Running 3 layers and 50 nodes with 40.0% of data
+M0: 0.0006500629242509604	M1: 0.00041754820267669857	M2: 0.0004574042104650289	M3: 0.0004009823314845562	M4: 0.0005447230068966746	M5: 0.0003450525691732764	M6: 0.00043715309584513307
+Best Validation Losses So Far:
+M0: 0.0006500286399386823	M1: 0.00040897392318584025	M2: 0.0004441401397343725	M3: 0.0003906496858689934	M4: 0.0005227060173638165	M5: 0.00033645553048700094	M6: 0.0004147784202359617
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 694 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_04-53-59_0.4Data_3Layers_50Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 15
+Running 3 layers and 100 nodes with 40.0% of data
+M0: 0.00014996205572970212	M1: 0.00018399773398414254	M2: 0.00012446359323803335	M3: 0.00016938177577685565	M4: 0.0002671223192010075	M5: 0.00014755854499526322	M6: 0.0001947795826708898
+Best Validation Losses So Far:
+M0: 0.00014730182010680437	M1: 0.00017255386046599597	M2: 0.00010337268031435087	M3: 0.0001593711640452966	M4: 0.0002576019032858312	M5: 0.00014598197594750673	M6: 0.00015290673763956875
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 495 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_06-04-22_0.4Data_3Layers_100Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 16
+Running 3 layers and 200 nodes with 40.0% of data
+M0: 3.622327130869962e-05	M1: 3.128065509372391e-05	M2: 4.161931428825483e-05	M3: 2.8243504857528023e-05	M4: 4.030225318274461e-05	M5: 4.452309804037213e-05	M6: 3.973835555370897e-05
+Best Validation Losses So Far:
+M0: 2.8471862606238574e-05	M1: 2.9164550142013468e-05	M2: 3.3525826438562945e-05	M3: 2.5490391635685228e-05	M4: 2.859957021428272e-05	M5: 3.29044196405448e-05	M6: 3.48675275745336e-05
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 473 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_06-55-29_0.4Data_3Layers_200Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 17
+Running 3 layers and 5 nodes with 50.0% of data
+M0: 0.017729105427861214	M1: 0.005126208998262882	M2: 0.01584484986960888	M3: 0.04516226053237915	M4: 0.22968269884586334	M5: 0.010388900525867939	M6: 0.02035740204155445
+Best Validation Losses So Far:
+M0: 0.01753826253116131	M1: 0.005162858869880438	M2: 0.015488644130527973	M3: 0.01942525990307331	M4: 0.22934497892856598	M5: 0.009901788085699081	M6: 0.01948956400156021
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 494 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_07-44-28_0.5Data_3Layers_5Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 18
+Running 3 layers and 50 nodes with 50.0% of data
+Epoch training took 6.655467748641968 seconds
+Epoch: 1000, Total Loss: -74.10252380371094
+Validation Losses:
+M0: 0.00013482886424753815	M1: 0.00017185563046950847	M2: 0.00021075221593491733	M3: 0.00020599922572728246	M4: 0.00026420221547596157	M5: 0.0004480471252463758	M6: 6.682475213892758e-05
+Best Validation Losses So Far:
+M0: 0.00013482886424753815	M1: 0.00017058567027561367	M2: 0.0002084567677229643	M3: 0.0002062592247966677	M4: 0.0002524795418139547	M5: 0.00043440499575808644	M6: 6.617766484851018e-05
+Improvement detected this epoch.
+Validation took 0.7853174209594727 seconds
+Training Arch No. 19
+Running 3 layers and 100 nodes with 50.0% of data
+M0: 6.213943561306223e-05	M1: 9.934516856446862e-05	M2: 8.957247337093577e-05	M3: 5.920540206716396e-05	M4: 0.0001097686545108445	M5: 5.388228237279691e-05	M6: 7.440870103891939e-05
+Best Validation Losses So Far:
+M0: 5.4268475651042536e-05	M1: 7.35376524971798e-05	M2: 7.873135473346338e-05	M3: 5.972476355964318e-05	M4: 9.855782991508022e-05	M5: 5.004530612495728e-05	M6: 7.292572263395414e-05
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 748 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_10-52-34_0.5Data_3Layers_100Neurons dir not found, creating it
+Saving train and val data...
+Training Arch No. 20
+Running 3 layers and 200 nodes with 50.0% of data
+M0: 7.271253707585856e-05	M1: 4.230663034832105e-05	M2: 5.330315252649598e-05	M3: 4.403181446832605e-05	M4: 3.323105556773953e-05	M5: 3.028217179235071e-05	M6: 2.9354745493037626e-05
+Best Validation Losses So Far:
+M0: 2.3166934624896385e-05	M1: 2.8400623705238104e-05	M2: 2.2148258722154424e-05	M3: 2.807147757266648e-05	M4: 2.238692104583606e-05	M5: 2.2397449356503785e-05	M6: 2.876113103411626e-05
+No improvement detected this epoch: 10 Epochs since last improvement.
+Validation loss stopped improving at 443 epochs
+Saving model checkpoint...
+checkpoints/mass_arch_weights/Model_water_seed0_random_2024_08_26_12-29-05_0.5Data_3Layers_200Neurons dir not found, creating it
+Saving train and val data...

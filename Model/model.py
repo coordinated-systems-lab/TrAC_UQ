@@ -86,8 +86,9 @@ class Ensemble(object):
         self.input_filter = MeanStdevFilter(self.input_dim) 
         self.output_filter = MeanStdevFilter(self.output_dim)
 
-        self._model_id = "Model_water_seed{}_{}_{}_0.1Data".format(params['seed'], params['split_type'],\
-                                                datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'))
+        self._model_id = "Model_water_seed{}_{}_{}_{}Data_{}Layers_{}Neurons".format(params['seed'], params['split_type'],\
+                                                datetime.datetime.now().strftime('%Y_%m_%d_%H-%M-%S'),\
+                                                    params['frac_of_data'], params['num_layers'], params['num_nodes'])
 
     def calculate_mean_var(self):
 
@@ -170,7 +171,7 @@ class Ensemble(object):
         self.current_best_losses = np.zeros(          # params['num_models'] = 7
             self.params['num_models']) + sys.maxsize  # weird hack (YLTSI), there's almost surely a better way...
         self.current_best_weights = [None] * self.params['num_models']
-        val_improve = deque(maxlen=4)
+        val_improve = deque(maxlen=11)
         lr_lower = False
         min_model_epochs = 0 if not min_model_epochs else min_model_epochs
 
@@ -221,7 +222,7 @@ class Ensemble(object):
                     plural = 's' if epoch_diff > 1 else ''
                     print('No improvement detected this epoch: {} Epoch{} since last improvement.'.format(epoch_diff,plural))
                                                                                           
-                if len(val_improve) > 3:
+                if len(val_improve) > 10:
                     if not any(np.array(val_improve)[1:]):  # If no improvement in the last 5 epochs
                         # assert val_improve[0]
                         if (i >= min_model_epochs):
@@ -248,8 +249,8 @@ class Ensemble(object):
         """
         print("Saving model checkpoint...")
         check_or_make_folder("./checkpoints")
-        check_or_make_folder("./checkpoints/model_saved_weights")
-        save_dir = "./checkpoints/model_saved_weights/{}".format(self._model_id)
+        check_or_make_folder("./checkpoints/mass_arch_weights")
+        save_dir = "./checkpoints/mass_arch_weights/{}".format(self._model_id)
         check_or_make_folder(save_dir)
         # Create a dictionary with pytorch objects we need to save, starting with models
         torch_state_dict = {'model_{}_state_dict'.format(i): w for i, w in enumerate(self.current_best_weights)}
@@ -304,6 +305,9 @@ class Ensemble(object):
             self.models[i].load_state_dict(torch_state_dict['model_{}_state_dict'.format(i)])
         self.min_logvar = torch_state_dict['logvar_min']
         self.max_logvar = torch_state_dict['logvar_max']
+
+        # SET LOG VARIANCE OF THE MODEL HERE
+        self.set_model_logvar_limits()
         # loading train and val data     
         data_state_dict = pickle.load(open(model_dir + '/model_data.pkl', 'rb'))
         self.rand_input_filtered_train = data_state_dict['train_input_filter_data']

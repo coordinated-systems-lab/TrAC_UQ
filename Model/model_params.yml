@@ -1,7 +1,7 @@
 args:
     seed: 0
     data_dir: "../Data/crop_model_sample_data_CO2_balance.csv"
-    model_epochs: 1000
+    model_epochs: 500
     model_lr: 0.001
     l2_reg_multiplier: 1 
     num_layers: 4
